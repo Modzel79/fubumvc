@@ -61,9 +61,16 @@ namespace FubuMVC.Core.Routing
                            : new SessionlessAsynchronousHttpHandlerSource();
             }
 
-            return sessionStateRequirement == SessionStateRequirement.RequiresSessionState
-                       ? (IHttpHandlerSource)new SynchronousHttpHandlerSource()
-                       : new SessionlessSynchronousHttpHandlerSource();
+            if (sessionStateRequirement == SessionStateRequirement.RequiresSessionState)
+                return (IHttpHandlerSource)new SynchronousHttpHandlerSource();
+            else if (sessionStateRequirement == SessionStateRequirement.RequiresReadOnlySessionState)
+                return (IHttpHandlerSource)new ReadOnlySessionSynchronousHttpHandlerSource();
+            else
+                return new SessionlessSynchronousHttpHandlerSource();
+
+            //return sessionStateRequirement == SessionStateRequirement.RequiresSessionState
+            //           ? (IHttpHandlerSource)new SynchronousHttpHandlerSource()
+            //           : new SessionlessSynchronousHttpHandlerSource();
         }
     }
 }

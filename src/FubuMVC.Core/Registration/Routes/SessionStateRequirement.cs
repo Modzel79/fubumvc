@@ -6,6 +6,7 @@ namespace FubuMVC.Core.Registration.Routes
 
         public static readonly SessionStateRequirement RequiresSessionState = new SessionStateRequirement("RequiresSessionState");
         public static readonly SessionStateRequirement DoesNotUseSessionState = new SessionStateRequirement("DoesNotUseSessionState");
+        public static readonly SessionStateRequirement RequiresReadOnlySessionState = new SessionStateRequirement("RequiresReadOnlySessionState");
 
         private SessionStateRequirement(string text)
         {

@@ -8,25 +8,81 @@ using FubuCore.Reflection;
 
 namespace FubuMVC.Core.Registration.Routes
 {
-    public class RouteParameter : DescribesItself
+    public class RouteAccessorParameter : RouteParameter
     {
-        // Use the first property to get the name
-        // use the full blown accessor to get the value
-
         private readonly Accessor _accessor;
-        private readonly Regex _regex;
-        private readonly Regex _regexGreedy;
 
-        public RouteParameter(Accessor accessor)
+        public RouteAccessorParameter(Accessor accessor)
         {
             _accessor = accessor;
             accessor.ForAttribute<RouteInputAttribute>(x => DefaultValue = x.DefaultValue);
+        }
 
+        public override string Name { get { return _accessor.Name; } }
+
+        public override object GetRawValue(object input)
+        {
+            object rawValue = input == null ? DefaultValue : _accessor.GetValue(input);
+            return rawValue ?? DefaultValue;
+        }
+
+        public override bool HasValue(object input)
+        {
+            var raw = _accessor.GetValue(input);
+            return raw != null;
+        }
+
+        public override bool CanTemplate(object inputModel)
+        {
+            object rawValue = GetRawValue(inputModel);
+            if (rawValue != null)
+            {
+                return _accessor.PropertyType.IsValueType
+                           ? !rawValue.Equals(Activator.CreateInstance(_accessor.PropertyType))
+                           : true;
+
+            }
+            return false;
+        }
+
+        public override int GetHashCode()
+        {
+            return (_accessor != null ? _accessor.GetHashCode() : 0);
+        }
+
+        public override string ToString()
+        {
+            if (DefaultValue != null) return string.Format("Accessor: {0}, DefaultValue: {1}", _accessor, DefaultValue);
+
+            return "Accessor: {0}".ToFormat(_accessor);
+        }
+
+        public override bool Equals(RouteParameter other)
+        {
+            if (ReferenceEquals(null, other)) 
+                return false;
+
+            if (other is RouteAccessorParameter)
+                return Equals(((RouteAccessorParameter)other)._accessor, this._accessor);
+            else
+                return false;
+        }
+    }
+
+    public abstract class RouteParameter : DescribesItself
+    {
+        // Use the first property to get the name
+        // use the full blown accessor to get the value
+        private readonly Regex _regex;
+        private readonly Regex _regexGreedy;
+
+        public RouteParameter()
+        {
             _regex = new Regex(@"{\*?" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled);
             _regexGreedy = new Regex(@"{\*" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled);
         }
 
-        public string Name { get { return _accessor.Name; } }
+        public abstract string Name { get;  }
 
         public object DefaultValue { get; set; }
 
@@ -56,23 +112,20 @@ namespace FubuMVC.Core.Registration.Routes
 
         public string Substitute(RouteParameters parameters, string url)
         {
-            return substitute(url, parameters[_accessor.Name] ?? DefaultValue.ToString());
+            return substitute(url, parameters[Name] ?? DefaultValue.ToString());
         }
 
-        public bool CanTemplate(object inputModel)
+        public virtual bool CanTemplate(object inputModel)
         {
             object rawValue = GetRawValue(inputModel);
-            if (rawValue != null)
-            {
-                return _accessor.PropertyType.IsValueType
-                           ? !rawValue.Equals(Activator.CreateInstance(_accessor.PropertyType))
-                           : true;
 
-            }
+            if (rawValue != null)
+                return  true;
+
             return false;
         }
 
-        public string ToQueryString(object input)
+        public virtual string ToQueryString(object input)
         {
             object rawValue = GetRawValue(input);
 
@@ -89,36 +142,26 @@ namespace FubuMVC.Core.Registration.Routes
             return Name.UrlEncoded() + "=" + rawValue.ToString().UrlEncoded();
         }
 
-        public string ToQueryString(RouteParameters parameters)
+        public virtual string ToQueryString(RouteParameters parameters)
         {
             return makeQueryString(parameters[Name]);
         }
 
-        private object GetRawValue(object input)
-        {
-            object rawValue = input == null
-                                  ? DefaultValue
-                                  : _accessor.GetValue(input);
-
-            return rawValue ?? DefaultValue;
-        }
+        public abstract object GetRawValue(object input);
 
         public bool IsSatisfied(RouteParameters routeParameters)
         {
-            return routeParameters.Has(_accessor.Name) || DefaultValue != null;
+            return routeParameters.Has(Name) || DefaultValue != null;
         }
 
-        public bool HasValue(object input)
-        {
-            var raw = _accessor.GetValue(input);
-            return raw != null;
-        }
+        public abstract bool HasValue(object input);
 
-        public bool Equals(RouteParameter other)
+        public virtual bool Equals(RouteParameter other)
         {
-            if (ReferenceEquals(null, other)) return false;
-            if (ReferenceEquals(this, other)) return true;
-            return Equals(other._accessor, _accessor);
+            if (ReferenceEquals(null, other)) 
+                return false;
+
+            return ReferenceEquals(this, other);
         }
 
         public override bool Equals(object obj)
@@ -129,14 +172,9 @@ namespace FubuMVC.Core.Registration.Routes
             return Equals((RouteParameter) obj);
         }
 
-        public override int GetHashCode()
-        {
-            return (_accessor != null ? _accessor.GetHashCode() : 0);
-        }
-
         void DescribesItself.Describe(Description description)
         {
-            description.Title = _accessor.ToString();
+            description.Title = Name;
 
             if (DefaultValue != null)
             {
@@ -146,9 +184,15 @@ namespace FubuMVC.Core.Registration.Routes
 
         public override string ToString()
         {
-            if (DefaultValue != null) return string.Format("Accessor: {0}, DefaultValue: {1}", _accessor, DefaultValue);
+            if (DefaultValue != null) 
+                return string.Format("Parameter: {0}, DefaultValue: {1}", Name, DefaultValue);
 
-            return "Accessor: {0}".ToFormat(_accessor);
+            return "Parameter: {0}".ToFormat(Name);
+        }
+
+        public override int GetHashCode()
+        {
+            return base.GetHashCode();
         }
     }
 }

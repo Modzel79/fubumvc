@@ -40,7 +40,7 @@ namespace FubuMVC.Core.Registration.Routes
                 if (property == null)
                     throw new FubuException(1002, "Url pattern \"{0}\" refers to non-existent property {1} on {2}.",
                                             pattern, propName, inputType.FullName);
-                var parameter = new RouteParameter(new SingleProperty(property))
+                var parameter = new RouteAccessorParameter(new SingleProperty(property))
                 {
                     DefaultValue = defaultValue
                 };

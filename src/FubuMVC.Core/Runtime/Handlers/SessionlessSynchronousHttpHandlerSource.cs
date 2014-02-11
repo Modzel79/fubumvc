@@ -11,4 +11,12 @@ namespace FubuMVC.Core.Runtime.Handlers
             return new SessionLessFubuHttpHandler(invoker, arguments, routeValues);
         }
     }
+
+    public class ReadOnlySessionSynchronousHttpHandlerSource : IHttpHandlerSource
+    {
+        public IHttpHandler Build(IBehaviorInvoker invoker, ServiceArguments arguments, RouteValueDictionary routeValues)
+        {
+            return new ReadOnlySessionFubuHttpHandler(invoker, arguments, routeValues);
+        }
+    }
 }

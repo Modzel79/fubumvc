@@ -1,10 +1,17 @@
 using System.Collections.Generic;
 using System.Web;
 using FubuCore.Binding;
+using System.Web.SessionState;
+using FubuMVC.Core.Http;
 
 namespace FubuMVC.Core.Runtime.Handlers
 {
-    public class SessionLessFubuHttpHandler : IHttpHandler
+    public interface IFubuHttpHandler : IHttpHandler
+    {
+        T Service<T>() where T : class;
+    }
+
+    public class SessionLessFubuHttpHandler : IFubuHttpHandler
     {
         private readonly IBehaviorInvoker _invoker;
         private readonly ServiceArguments _arguments;
@@ -24,5 +31,18 @@ namespace FubuMVC.Core.Runtime.Handlers
         }
 
         public bool IsReusable { get { return false; } }
+
+        public T Service<T>() where T : class
+        {
+            return _arguments.Get<T>();
+        }
+    }
+
+    public class ReadOnlySessionFubuHttpHandler : SessionLessFubuHttpHandler, IReadOnlySessionState 
+    {
+        public ReadOnlySessionFubuHttpHandler(IBehaviorInvoker invoker, ServiceArguments arguments, IDictionary<string, object> routeData)
+            : base(invoker, arguments, routeData)
+        {
+        }
     }
 }

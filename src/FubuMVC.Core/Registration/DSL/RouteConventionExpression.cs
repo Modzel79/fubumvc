@@ -220,7 +220,7 @@ namespace FubuMVC.Core.Registration.DSL
         public RouteParameter RouteInputFor(Expression<Func<T, object>> expression)
         {
             Accessor accessor = ReflectionHelper.GetAccessor(expression);
-            var input = new RouteParameter(accessor);
+            var input = new RouteAccessorParameter(accessor);
             _modifiers.Add(r => r.Input.AddRouteInput(input, true));
 
             return input;

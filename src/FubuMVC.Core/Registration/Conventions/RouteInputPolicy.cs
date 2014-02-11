@@ -40,7 +40,7 @@ namespace FubuMVC.Core.Registration.Conventions
 
         private static void addPropertyInput(IRouteDefinition route, PropertyInfo property)
         {
-            var input = new RouteParameter(new SingleProperty(property));
+            var input = new RouteAccessorParameter(new SingleProperty(property));
             route.Input.AddRouteInput(input, true);
         }
 

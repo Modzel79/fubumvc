@@ -152,7 +152,7 @@ namespace FubuMVC.Core.Registration.Routes
         public void AddRouteInput(Expression<Func<T, object>> expression)
         {
             var accessor = ReflectionHelper.GetAccessor(expression);
-            var input = new RouteParameter(accessor);
+            var input = new RouteAccessorParameter(accessor);
 
             if (_routeParameters.Any(x => x.Name == input.Name)) return;
 
@@ -167,7 +167,7 @@ namespace FubuMVC.Core.Registration.Routes
         public void AddQueryInput(Expression<Func<T, object>> expression)
         {
             var accessor = ReflectionHelper.GetAccessor(expression);
-            var input = new RouteParameter(accessor);
+            var input = new RouteAccessorParameter(accessor);
 
             _queryParameters.Add(input);
         }
@@ -175,7 +175,7 @@ namespace FubuMVC.Core.Registration.Routes
         public void AddQueryInput(PropertyInfo property)
         {
             Accessor accessor = new SingleProperty(property);
-            var input = new RouteParameter(accessor);
+            var input = new RouteAccessorParameter(accessor);
 
             if (Parent != null)
             {

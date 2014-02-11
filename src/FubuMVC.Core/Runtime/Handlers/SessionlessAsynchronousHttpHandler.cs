@@ -3,10 +3,15 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Web;
 using FubuCore.Binding;
+using FubuMVC.Core.Http;
 
 namespace FubuMVC.Core.Runtime.Handlers
 {
-    public class SessionlessAsynchronousHttpHandler : IHttpAsyncHandler
+    public interface IFubuHttpAsyncHandler : IFubuHttpHandler, IHttpAsyncHandler
+    {
+    }
+
+    public class SessionlessAsynchronousHttpHandler : IHttpAsyncHandler, IFubuHttpAsyncHandler
     {
         private readonly IBehaviorInvoker _invoker;
         private readonly ServiceArguments _arguments;
@@ -51,6 +56,11 @@ namespace FubuMVC.Core.Runtime.Handlers
         {
             var task = (Task) result;
             task.Wait(); //This won't really block because the request is already complete
+        }
+
+        public T Service<T>() where T : class
+        {
+            return _arguments.Get<T>();
         }
     }
 }

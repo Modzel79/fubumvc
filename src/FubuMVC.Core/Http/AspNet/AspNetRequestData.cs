@@ -50,9 +50,11 @@ namespace FubuMVC.Core.Http.AspNet
             Func<string, IEnumerable<string>, bool> defaultKeyFinder = (key, keys) => keys.Contains(key);
 
             var values = new SimpleKeyValues(finder, findKeys, keyFinder ?? defaultKeyFinder);
-            var valueSource = new FlatValueSource<object>(values, source.ToString());
+            var flatValueSource = new FlatValueSource<object>(values, source.ToString());
+            var dictionaryValueSource = new DictionaryValueSource<object>(values, source.ToString());
 
-            AddValues(valueSource);
+            AddValues(flatValueSource);
+            AddValues(dictionaryValueSource);
         }
 
         private static IEnumerable<string> keysForRequest(HttpRequestBase request)
