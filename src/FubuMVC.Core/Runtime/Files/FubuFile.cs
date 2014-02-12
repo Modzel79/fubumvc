@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 using FubuCore;
 
@@ -35,6 +36,27 @@ namespace FubuMVC.Core.Runtime.Files
             new FileSystem().ReadTextFile(Path, read);
         }
 
+        public long Length()
+        {
+            return new FileInfo(Path).Length;
+        }
+
+        public string Etag()
+        {
+            var length = Length();
+            var lastModified = LastModified();
+
+            var hash = lastModified.ToFileTimeUtc() ^ length;
+
+            return Convert.ToString(hash, 16);
+        }
+
+        public DateTime LastModified()
+        {
+            var last = new FileInfo(Path).LastWriteTimeUtc;
+            return new DateTime(last.Year, last.Month, last.Day, last.Hour, last.Minute, last.Second, last.Kind);
+        }
+
         public bool Equals(FubuFile other)
         {
             if (ReferenceEquals(null, other)) return false;
@@ -61,6 +83,11 @@ namespace FubuMVC.Core.Runtime.Files
         public override string ToString()
         {
             return string.Format("Path: {0}, Provenance: {1}", Path, Provenance);
+        }
+
+        public static IFubuFile Load(string relativePath)
+        {
+            return new FubuApplicationFiles().Find(relativePath);
         }
     }
 }

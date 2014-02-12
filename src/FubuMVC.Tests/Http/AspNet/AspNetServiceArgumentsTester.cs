@@ -45,6 +45,7 @@ namespace FubuMVC.Tests.Http.AspNet
             theArguments.Get<HttpContextBase>().ShouldNotBeNull();
         }
 
+
         [Test]
         public void should_add_the_request_data()
         {

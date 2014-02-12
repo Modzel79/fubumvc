@@ -71,6 +71,8 @@
     <Compile Include="Ajax\AjaxContinuationWriter.cs" />
     <Compile Include="Ajax\AjaxError.cs" />
     <Compile Include="ApplicationSettings.cs" />
+    <Compile Include="AsymmetricJsonAttribute.cs" />
+    <Compile Include="AutoImportAttribute.cs" />
     <Compile Include="Configuration\BehaviorGraphBuilder.cs" />
     <Compile Include="Behaviors\AsyncContinueWithBehavior.cs" />
     <Compile Include="Behaviors\Chrome\ChromeAttribute.cs" />
@@ -95,19 +97,29 @@
     <Compile Include="ConfigurationTypeAttribute.cs" />
     <Compile Include="Configuration\DefaultConfigurationPack.cs" />
     <Compile Include="Configuration\DiscoveryActionsConfigurationPack.cs" />
+    <Compile Include="ConnegAttribute.cs" />
+    <Compile Include="DiagnosticsSettings.cs" />
     <Compile Include="Diagnostics\AboutEndpoint.cs" />
+    <Compile Include="Diagnostics\DescriptionTags.cs" />
     <Compile Include="Diagnostics\RegisterAbout.cs" />
+    <Compile Include="DoNotAutoImportAttribute.cs" />
     <Compile Include="Endpoints\EndpointDriver.cs" />
     <Compile Include="Endpoints\EndpointFormatting.cs" />
     <Compile Include="Endpoints\EndpointInvocation.cs" />
     <Compile Include="Endpoints\HttpResponse.cs" />
     <Compile Include="Endpoints\WebRequestResponseExtensions.cs" />
     <Compile Include="Diagnostics\FubuApplicationDescriber.cs" />
+    <Compile Include="FormatterOptions.cs" />
+    <Compile Include="FubuModuleAttribute.cs" />
+    <Compile Include="FubuPartialAttribute.cs" />
     <Compile Include="FubuRuntime.cs" />
+    <Compile Include="HtmlEndpointAttribute.cs" />
     <Compile Include="Http\AspNet\AspNetResponse.cs" />
     <Compile Include="Http\Compression\ApplyContentCompression.cs" />
     <Compile Include="Http\Compression\DeflateHttpContentEncoding.cs" />
     <Compile Include="Http\Compression\DoNotCompressAttribute.cs" />
+    <Compile Include="Http\ConnegQuerystring.cs" />
+    <Compile Include="Http\ConnegSettings.cs" />
     <Compile Include="Http\Cookies\CookieState.cs" />
     <Compile Include="Http\Cookies\CookieValue.cs" />
     <Compile Include="Http\Cookies\CookieParser.cs" />
@@ -117,12 +129,16 @@
     <Compile Include="Http\Cookies\Segment.cs" />
     <Compile Include="Http\CurrentHttpRequestExtensions.cs" />
     <Compile Include="Http\HeaderValueSource.cs" />
+    <Compile Include="Http\IMimetypeCorrection.cs" />
     <Compile Include="Http\IResponse.cs" />
     <Compile Include="IApplicationSource.cs" />
     <Compile Include="IContainerFacilityExpression.cs" />
     <Compile Include="ImageTag.cs" />
+    <Compile Include="JsonEndpointAttribute.cs" />
+    <Compile Include="JsonMessage.cs" />
     <Compile Include="Packaging\PackageService.cs" />
     <Compile Include="PolicyAttribute.cs" />
+    <Compile Include="QueryStringAttribute.cs" />
     <Compile Include="ReflectionExtensions.cs" />
     <Compile Include="Registration\AccessorOverridesFinder.cs" />
     <Compile Include="Registration\AccessorRulesExpression.cs" />
@@ -187,6 +203,8 @@
     <Compile Include="Registration\SettingAlteration.cs" />
     <Compile Include="Registration\SettingReplacement.cs" />
     <Compile Include="Registration\SettingsCollection.cs" />
+    <Compile Include="Resources\Conneg\IResourceNotFoundHandler.cs" />
+    <Compile Include="Resources\Conneg\DefaultResourceNotFoundHandler.cs" />
     <Compile Include="Resources\Etags\IHeadersCache.cs" />
     <Compile Include="Runtime\ExceptionHandlingObserver.cs" />
     <Compile Include="Runtime\Files\ContentFolder.cs" />
@@ -199,6 +217,7 @@
     <Compile Include="Runtime\Handlers\AsynchronousHttpHandler.cs" />
     <Compile Include="Runtime\Handlers\AsynchronousHttpHandlerSource.cs" />
     <Compile Include="Runtime\Handlers\IHttpHandlerSource.cs" />
+    <Compile Include="Runtime\InMemoryFubuRequest.cs" />
     <Compile Include="Runtime\RequestCompletion.cs" />
     <Compile Include="Runtime\Handlers\SessionlessAsynchronousHttpHandler.cs" />
     <Compile Include="Runtime\Handlers\SessionlessAsynchronousHttpHandlerSource.cs" />
@@ -211,7 +230,6 @@
     <Compile Include="Runtime\Logging\FinishedRecordingOutput.cs" />
     <Compile Include="Runtime\Logging\HttpStatusReport.cs" />
     <Compile Include="Runtime\Logging\OutputReport.cs" />
-    <Compile Include="Runtime\Logging\RecordingLogger.cs" />
     <Compile Include="Runtime\Logging\RedirectReport.cs" />
     <Compile Include="Runtime\Logging\ReplayRecordedOutput.cs" />
     <Compile Include="Runtime\Logging\SetHeaderValue.cs" />
@@ -326,6 +344,8 @@
     <Compile Include="Runtime\IFubuRouteHandler.cs" />
     <Compile Include="Security\SecurityServicesRegistry.cs" />
     <Compile Include="SessionState\CookieFlashProvider.cs" />
+    <Compile Include="SymmetricJsonAttribute.cs" />
+    <Compile Include="TagAttribute.cs" />
     <Compile Include="UI\DisplayConversionRegistryActivator.cs" />
     <Compile Include="Http\AspNet\AspNetHttpWriter.cs" />
     <Compile Include="Http\AspNet\AspNetCurrentHttpRequest.cs" />
@@ -417,7 +437,7 @@
     <Compile Include="Registration\Conventions\DownloadFileConvention.cs" />
     <Compile Include="Registration\Conventions\UrlPatternAttributePolicy.cs" />
     <Compile Include="Registration\DSL\ActionCallCandidateExpression.cs" />
-    <Compile Include="Attributes.cs" />
+    <Compile Include="RouteInputAttribute.cs" />
     <Compile Include="Behaviors\BasicBehavior.cs" />
     <Compile Include="DoNext.cs" />
     <Compile Include="Behaviors\IActionBehavior.cs" />
@@ -485,7 +505,12 @@
     <Compile Include="UI\IPartialInvoker.cs" />
     <Compile Include="UI\PartialInvoker.cs" />
     <Compile Include="Registration\Querying\ChainInterrogator.cs" />
+    <Compile Include="UrlAliasAttribute.cs" />
     <Compile Include="UrlContext.cs" />
+    <Compile Include="UrlFolderAttribute.cs" />
+    <Compile Include="UrlForNewAttribute.cs" />
+    <Compile Include="UrlPatternAttribute.cs" />
+    <Compile Include="UrlRegistryCategoryAttribute.cs" />
     <Compile Include="UrlStringExtensions.cs" />
     <Compile Include="Urls\IChainUrlResolver.cs" />
     <Compile Include="Urls\IUrlTemplatePattern.cs" />
@@ -527,6 +552,7 @@
     <Compile Include="Security\ISecurityContext.cs" />
     <Compile Include="Web\Security\WebAuthenticationContext.cs" />
     <Compile Include="Web\Security\WebSecurityContext.cs" />
+    <Compile Include="WrapWithAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ripple.dependencies.config">

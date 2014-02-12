@@ -10,7 +10,7 @@ src/CommonAssemblyInfo.cs
 _ReSharper.*
 *.[Rr]e[Ss]harper.user
 src/FubuMVC.*.ReSharper
-*.DotSettings.user
+*.DotSettings*
 *.suo
 *.cache
 ~$*
@@ -36,6 +36,7 @@ src/Spark.Web.FubuMVC/
 report.htm
 installation_report.htm
 src/Spark.Web.FubuMVC
+src/FubuMVC.Docs/snippets
 FubuTestAppRoot
 lib/bottles/FubuMVC*.*
 lib/**/*.nupkg

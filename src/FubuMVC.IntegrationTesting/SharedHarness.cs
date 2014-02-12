@@ -20,12 +20,6 @@ namespace FubuMVC.IntegrationTesting
     [SetUpFixture]
     public class HarnessBootstrapper
     {
-        [SetUp]
-        public void SetUp()
-        {
-            SelfHostHarness.Start();
-        }
-
         [TearDown]
         public void TearDown()
         {
@@ -51,6 +45,8 @@ namespace FubuMVC.IntegrationTesting
         {
             get
             {
+                if (_server == null) Recycle();
+
                 return _server.BaseAddress;
             }
         }
@@ -59,13 +55,15 @@ namespace FubuMVC.IntegrationTesting
         {
             get
             {
+                if (_server == null) Recycle();
+
                 return _server.Endpoints;
             }
         }
 
         public static void Shutdown()
         {
-            _server.SafeDispose();
+            if (_server != null) _server.SafeDispose();
         }
 
         public static void Recycle()
@@ -74,8 +72,6 @@ namespace FubuMVC.IntegrationTesting
             {
                 _server.Dispose();
             }
-
-            FubuMvcPackageFacility.PhysicalRootPath = GetRootDirectory();
 
             var port = PortFinder.FindPort(5500);
             var runtime = bootstrapRuntime();
@@ -136,6 +132,27 @@ namespace FubuMVC.IntegrationTesting
         public static HttpResponse StatusCodeShouldBe(this HttpResponse response, HttpStatusCode code)
         {
             response.StatusCode.ShouldEqual(code);
+
+            return response;
+        }
+
+        public static HttpResponse EtagShouldBe(this HttpResponse response, string etag)
+        {
+            etag.Trim('"').ShouldEqual(etag);
+            return response;
+        }
+
+        public static DateTime? LastModified(this HttpResponse response)
+        {
+            var lastModifiedString = response.ResponseHeaderFor(HttpResponseHeader.LastModified);
+            return lastModifiedString.IsEmpty() ? (DateTime?) null : DateTime.ParseExact(lastModifiedString, "r", null);
+        }
+
+        public static HttpResponse LastModifiedShouldBe(this HttpResponse response, DateTime expected)
+        {
+            var lastModified = response.LastModified();
+            lastModified.HasValue.ShouldBeTrueBecause("No value for LastModified");
+            lastModified.ShouldEqual(expected);
 
             return response;
         }

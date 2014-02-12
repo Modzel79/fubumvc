@@ -1,4 +1,5 @@
 using System;
+using Bottles;
 using FubuCore;
 using FubuMVC.Core.Packaging;
 
@@ -76,6 +77,7 @@ namespace FubuMVC.Core
     public static class FubuMode
     {
         public static readonly string Development = "Development";
+        public static readonly string Testing = "Testing";
 
         /// <summary>
         /// Change the mechanism used to detect the FubuMode
@@ -135,7 +137,7 @@ namespace FubuMVC.Core
         /// <returns></returns>
         public static string Mode()
         {
-            return _determineMode.Value;
+            return _determineMode.Value ?? string.Empty;
         }
 
         /// <summary>
@@ -145,6 +147,24 @@ namespace FubuMVC.Core
         public static void Mode(string mode)
         {
             _determineMode = new Lazy<string>(() => mode);
+        }
+
+        public static bool InTestingMode()
+        {
+            var returnValue = false;
+            bool.TryParse(PackageRegistry.Properties[Testing], out returnValue);
+
+            return returnValue;
+        }
+
+        public static void SetupForTestingMode()
+        {
+            PackageRegistry.Properties[Testing] = true.ToString();
+        }
+
+        public static void RemoveTestingMode()
+        {
+            PackageRegistry.Properties.Remove(Testing);
         }
 
         /// <summary>

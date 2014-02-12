@@ -10,8 +10,9 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>FubuMVC.IntegrationTesting</RootNamespace>
     <AssemblyName>FubuMVC.IntegrationTesting</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +23,7 @@
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -30,14 +32,24 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
+    <Reference Include="Autofac">
+      <HintPath>..\packages\Autofac\lib\NET40\Autofac.dll</HintPath>
+    </Reference>
+    <Reference Include="Autofac.Configuration">
+      <HintPath>..\packages\Autofac\lib\NET40\Autofac.Configuration.dll</HintPath>
+    </Reference>
     <Reference Include="Bottles">
       <HintPath>..\packages\Bottles\lib\Bottles.dll</HintPath>
     </Reference>
     <Reference Include="Castle.Core">
-      <HintPath>..\packages\Castle.Core\lib\net40-client\Castle.Core.dll</HintPath>
+      <HintPath>..\packages\Castle.Core\lib\net45\Castle.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="Castle.Windsor">
+      <HintPath>..\packages\Castle.Windsor\lib\net45\Castle.Windsor.dll</HintPath>
     </Reference>
     <Reference Include="FubuCore">
       <HintPath>..\packages\FubuCore\lib\FubuCore.dll</HintPath>
@@ -48,18 +60,15 @@
     <Reference Include="HtmlTags">
       <HintPath>..\packages\HtmlTags\lib\4.0\HtmlTags.dll</HintPath>
     </Reference>
-    <Reference Include="Ionic.Zip">
-      <HintPath>..\packages\DotNetZip\lib\net20\Ionic.Zip.dll</HintPath>
-    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="Microsoft.Owin">
-      <HintPath>..\packages\Microsoft.Owin\lib\net40\Microsoft.Owin.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin\lib\net45\Microsoft.Owin.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Host.HttpListener">
-      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener\lib\net40\Microsoft.Owin.Host.HttpListener.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener\lib\net45\Microsoft.Owin.Host.HttpListener.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Owin.Hosting">
-      <HintPath>..\packages\Microsoft.Owin.Hosting\lib\net40\Microsoft.Owin.Hosting.dll</HintPath>
+      <HintPath>..\packages\Microsoft.Owin.Hosting\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
     </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit\lib\nunit.framework.dll</HintPath>
@@ -101,12 +110,19 @@
     <Compile Include="Ajax\AjaxContinuationProcessingTester.cs" />
     <Compile Include="Async\AsyncRouteIntegrationTester.cs" />
     <Compile Include="Authorization\end_to_end_authorization_tester.cs" />
+    <Compile Include="Autofac.cs" />
+    <Compile Include="Auto_Katana_Hosting_Integration_Tester.cs" />
     <Compile Include="Caching\caching_tester.cs" />
+    <Compile Include="can_register_and_use_OWIN_middleware_from_a_bottle.cs" />
     <Compile Include="Chrome\ChromeBehaviorIntegrationTester.cs" />
+    <Compile Include="Conneg\AjaxInputModelBindingIntegrationTester.cs" />
+    <Compile Include="Conneg\Conneg_can_be_corrected_with_querystring_parameters_for_JSON_and_XML.cs" />
     <Compile Include="Conneg\Conneg_Can_Choose_Output_Media_Based_on_Mimetypes.cs" />
+    <Compile Include="Conneg\Custom_mimetype_correction_policy_usage.cs" />
     <Compile Include="Conneg\OutputFromAnActionThatReturnsStrings.cs" />
     <Compile Include="Conneg\Output_from_actions_that_return_ajax_continuations.cs" />
     <Compile Include="Conneg\Output_from_Actions_that_return_HtmlTags.cs" />
+    <Compile Include="Conneg\Resource_cannot_be_found_handling.cs" />
     <Compile Include="Continuations\can_use_continuations_on_a_partial.cs" />
     <Compile Include="Continuations\redirects_with_the_get.cs" />
     <Compile Include="debugger.cs" />
@@ -123,12 +139,22 @@
     <Compile Include="Packaging\reading_files_and_contents.cs" />
     <Compile Include="Packaging\unlinking_a_bottle_from_the_command_line.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="StaticFiles\reading_static_file_content_with_katana.cs" />
     <Compile Include="Routing\end_to_end_route_alias_tester.cs" />
+    <Compile Include="Samples\ConnegSamples.cs" />
+    <Compile Include="Samples\FubuContinuationSamples.cs" />
+    <Compile Include="Samples\IFubuRequestUsage.cs" />
+    <Compile Include="Samples\KatanaBootstrapping.cs" />
     <Compile Include="SharedHarness.cs" />
     <Compile Include="SharedHarnessContext.cs" />
     <Compile Include="SelfHostHttpServerTester.cs" />
+    <Compile Include="Windsor.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\FubuMVC.Autofac\FubuMVC.Autofac.csproj">
+      <Project>{3662e1ae-d402-43b5-8f81-0d9a04b6f434}</Project>
+      <Name>FubuMVC.Autofac</Name>
+    </ProjectReference>
     <ProjectReference Include="..\FubuMVC.Core\FubuMVC.Core.csproj">
       <Project>{E18FD922-0E7A-49CD-B89F-473826077B9D}</Project>
       <Name>FubuMVC.Core</Name>
@@ -152,6 +178,14 @@
     <ProjectReference Include="..\FubuMVC.Tests\FubuMVC.Tests.csproj">
       <Project>{FEB91F9F-ECE2-480C-B39C-A44BBF1F7B01}</Project>
       <Name>FubuMVC.Tests</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FubuMVC.Windsor\FubuMVC.Windsor.csproj">
+      <Project>{3825ff35-1bf7-42b7-9ab4-43e07de73a06}</Project>
+      <Name>FubuMVC.Windsor</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\OwinBottle\OwinBottle.csproj">
+      <Project>{60b6139b-6bda-4860-a475-9675d47888f7}</Project>
+      <Name>OwinBottle</Name>
     </ProjectReference>
     <ProjectReference Include="..\TestPackage1\TestPackage1.csproj">
       <Project>{1F18D6EB-4D9C-407A-BD70-C5D525E377B6}</Project>
@@ -249,6 +283,7 @@
     <Content Include="content\styles\redmond\jquery.ui.theme.css" />
     <Content Include="content\styles\ui.multiselect.css" />
     <Content Include="Files\1.txt" />
+    <Content Include="Sample.js" />
     <Content Include="Tests\Packaging\Environment\Environment Runner captures errors from the Environment setup.xml" />
     <Content Include="Tests\Packaging\Environment\Execute Environment Happy Path.xml" />
     <Content Include="Tests\Packaging\Environment\Logging installer failures.xml" />

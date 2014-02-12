@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using AssemblyPackage;
 using FubuCore;
 using FubuMVC.Core.Behaviors;
@@ -23,6 +24,8 @@ namespace FubuMVC.Tests.Registration.Conventions
         [SetUp]
         public void SetUp()
         {
+            TypePool.FindTheCallingAssembly().FullName.ShouldEqual(Assembly.GetExecutingAssembly().FullName);
+
             source = new ActionSource();
             _graph = new Lazy<BehaviorGraph>(() => {
                 return BehaviorGraph.BuildFrom(r => {
@@ -41,6 +44,9 @@ namespace FubuMVC.Tests.Registration.Conventions
         public void uses_the_application_assembly_if_none_is_specified()
         {
             source.IncludeClassesSuffixedWithController();
+
+            theResultingGraph.ApplicationAssembly.GetName()
+                .Name.ShouldEqual(Assembly.GetExecutingAssembly().GetName().Name);
 
             theResultingGraph.BehaviorFor<OneController>(x => x.Query(null))
                 .ShouldNotBeNull();

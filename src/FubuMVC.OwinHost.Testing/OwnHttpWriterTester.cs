@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.IO;
 using System.Net;
 using NUnit.Framework;
 using FubuTestingSupport;
@@ -16,7 +17,20 @@ namespace FubuMVC.OwinHost.Testing
         protected void beforeEach()
         {
             environment = new Dictionary<string, object>();
+            environment.Add(OwinConstants.ResponseBodyKey, new MemoryStream());
+
             writer = new OwinHttpWriter(environment);
+        }
+
+        [Test]
+        public void can_write_multiple_values_for_the_same_header()
+        {
+            writer.AppendHeader("X-1", "A");
+            writer.AppendHeader("X-1", "B");
+
+            var dictionary = environment.Get<IDictionary<string, string[]>>(OwinConstants.ResponseHeadersKey);
+            dictionary
+                .Get("X-1").ShouldHaveTheSameElementsAs("A", "B");
         }
 
         [Test]

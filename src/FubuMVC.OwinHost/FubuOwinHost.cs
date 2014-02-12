@@ -13,15 +13,20 @@ using Owin;
 
 namespace FubuMVC.OwinHost
 {
+    using AppFunc = Func<IDictionary<string, object>, Task>;
+
     public class FubuOwinHost
     {
         private readonly RouteCollection _routes;
 
-        public static Action<IAppBuilder> ToStartup(FubuRuntime runtime)
+        public static Action<IAppBuilder> ToStartup(OwinSettings settings, IList<RouteBase> routes)
         {
             return builder =>
             {
-                var host = new FubuOwinHost(runtime.Routes);
+                settings.As<IAppBuilderConfiguration>()
+                    .Configure(builder);
+
+                var host = new FubuOwinHost(routes);
                 builder.Run(host);
             };
         }
@@ -43,6 +48,7 @@ namespace FubuMVC.OwinHost
             }
 
             new OwinRequestReader().Read(environment);
+
             var arguments = new OwinServiceArguments(routeData, environment);
             var invoker = routeData.RouteHandler.As<FubuRouteHandler>().Invoker;
 
@@ -70,10 +76,9 @@ namespace FubuMVC.OwinHost
 
         private void write500(IDictionary<string, object> environment, Exception exception)
         {
-            environment[OwinConstants.ResponseStatusCodeKey] = HttpStatusCode.InternalServerError;
-            var response = environment.Get<Stream>(OwinConstants.ResponseBodyKey);
-            using (var writer = new StreamWriter(response))
+            using (var writer = new OwinHttpWriter(environment))
             {
+                writer.WriteResponseCode(HttpStatusCode.InternalServerError);
                 writer.Write("FubuMVC has detected an exception\r\n");
                 writer.Write(exception.ToString());
             }

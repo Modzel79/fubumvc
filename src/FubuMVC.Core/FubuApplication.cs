@@ -3,8 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Web.Routing;
 using Bottles;
-using Bottles.Diagnostics;
-using Bottles.Environment;
+using Bottles.Services;
 using FubuCore;
 using FubuCore.Binding;
 using FubuMVC.Core.Bootstrapping;
@@ -24,7 +23,7 @@ namespace FubuMVC.Core
     /// <summary>
     /// Key class used to define and bootstrap a FubuMVC application
     /// </summary>
-    public class FubuApplication : IContainerFacilityExpression
+    public class FubuApplication : IContainerFacilityExpression, IApplication<FubuRuntime>
     {
         private readonly Lazy<IContainerFacility> _facility;
         private readonly List<Action<IPackageFacility>> _packagingDirectives = new List<Action<IPackageFacility>>();
@@ -141,15 +140,13 @@ namespace FubuMVC.Core
             BottleFiles.ContentFolder = FubuMvcPackageFacility.FubuContentFolder;
             BottleFiles.PackagesFolder = FileSystem.Combine("bin", FubuMvcPackageFacility.FubuPackagesFolder);
 
+            IList<RouteBase> routes = null;
 
-            PackageRegistry.LoadPackages(x =>
-            {
+            PackageRegistry.LoadPackages(x => {
                 x.Facility(_fubuFacility);
                 _packagingDirectives.Each(d => d(x));
 
-
-                x.Bootstrap(log =>
-                {
+                x.Bootstrap(log => {
                     // container facility has to be spun up here
                     var containerFacility = _facility.Value;
 
@@ -165,20 +162,25 @@ namespace FubuMVC.Core
                     // factory HAS to be spun up here.
                     factory = containerFacility.BuildFactory();
 
+                    routes = buildRoutes(factory, graph);
+                    routes.Each(r => RouteTable.Routes.Add(r));
+                    containerFacility.Register(typeof(FubuRouteTable), ObjectDef.ForValue(new FubuRouteTable{Routes = routes}));
+
                     return factory.GetAll<IActivator>();
                 });
             });
 
             FubuMvcPackageFacility.Restarted = DateTime.Now;
 
-            PackageRegistry.AssertNoFailures(() => {
-                throw new FubuException(0, FubuApplicationDescriber.WriteDescription());
-            });
+            PackageRegistry.AssertNoFailures(
+                () => { throw new FubuException(0, FubuApplicationDescriber.WriteDescription()); });
 
-            var routes = buildRoutes(factory, graph);
-            routes.Each(r => RouteTable.Routes.Add(r));
 
-            return new FubuRuntime(factory, _facility.Value, routes);
+            var runtime = new FubuRuntime(factory, _facility.Value, routes);
+
+            _facility.Value.Register(typeof(FubuRuntime), ObjectDef.ForValue(runtime));
+
+            return runtime;
         }
 
         public static void SetupNamingStrategyForHttpHeaders()
@@ -218,7 +220,7 @@ namespace FubuMVC.Core
 
                     try
                     {
-                        FubuExtensionFinder.ApplyExtensions(_registry.Value, assemblies);
+                        FubuExtensionFinder.ApplyExtensions(_registry.Value, assemblies, l);
                     }
                     catch (Exception e)
                     {
@@ -228,7 +230,6 @@ namespace FubuMVC.Core
                     _registry.Value.Config.Pop();
                 }
             });
-
         }
 
         /// <summary>
@@ -241,7 +242,10 @@ namespace FubuMVC.Core
             _packagingDirectives.Add(configure);
             return this;
         }
+    }
 
-
+    public class FubuRouteTable
+    {
+        public IList<RouteBase> Routes;
     }
 }

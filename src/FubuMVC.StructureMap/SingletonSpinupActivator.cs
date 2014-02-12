@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using Bottles;
 using Bottles.Diagnostics;
@@ -22,13 +21,11 @@ namespace FubuMVC.StructureMap
             // http://github.com/structuremap/structuremap/issues#issue/3
             var allSingletons =
                 _container.Model.PluginTypes.Where(x => x.Lifecycle == InstanceScope.Singleton.ToString());
-            Debug.WriteLine("Found singletons: " + allSingletons.Count());
+
             foreach (var pluginType in allSingletons)
             {
-                var instance = _container.GetInstance(pluginType.PluginType);
-                Debug.WriteLine("Initialized singleton in primary container: " + instance);
+                _container.GetInstance(pluginType.PluginType);
             }
-
         }
     }
 }

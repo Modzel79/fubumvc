@@ -35,7 +35,7 @@ namespace FubuMVC.OwinHost.Testing
     {
         public FubuApplication BuildApplication()
         {
-            return FubuApplication.For<HarnessRegistry>().StructureMap(new Container());
+            return FubuApplication.For<HarnessRegistry>().StructureMap();
         }
 
         public static void Run(Action<EndpointDriver> action)
@@ -92,6 +92,12 @@ namespace FubuMVC.OwinHost.Testing
         public static HttpResponse ShouldHaveHeader(this HttpResponse response, HttpResponseHeader header)
         {
             response.ResponseHeaderFor(header).ShouldNotBeEmpty();
+            return response;
+        }
+
+        public static HttpResponse ShouldHaveHeaderValue(this HttpResponse response, string header, string value)
+        {
+            response.ResponseHeaderFor(header).ShouldEqual(value);
             return response;
         }
 

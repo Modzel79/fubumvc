@@ -34,6 +34,9 @@
     <Reference Include="FubuDocs">
       <HintPath>..\packages\FubuDocs\lib\net40\FubuDocs.dll</HintPath>
     </Reference>
+    <Reference Include="FubuMVC.ViewEngines.Docs">
+      <HintPath>..\packages\FubuMVC.ViewEngines.Docs\lib\net40\FubuMVC.ViewEngines.Docs.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -55,13 +58,17 @@
     <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="ripple.dependencies.config" />
-    <EmbeddedResource Include="pak-Config.zip" />
-    <EmbeddedResource Include="pak-Data.zip" />
     <EmbeddedResource Include="pak-WebContent.zip" />
-  </ItemGroup>
-  <ItemGroup>
-    <Content Include="Topics.xml" />
+    <None Include="30.runtime-services\1.fuburequest.spark" />
+    <None Include="30.runtime-services\2.outputwriter.spark" />
+    <None Include="30.runtime-services\index.spark" />
+    <None Include="7.hosting\1.asp-net.spark" />
+    <None Include="7.hosting\2.owin.spark" />
+    <None Include="7.hosting\3.embedded.spark" />
+    <None Include="7.hosting\4.fubu-server.spark" />
+    <None Include="7.hosting\index.spark" />
+    <None Include="ripple.dependencies.config" />
+    <None Include="splash.spark" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

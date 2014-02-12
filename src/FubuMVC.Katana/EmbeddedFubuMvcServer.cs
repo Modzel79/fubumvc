@@ -1,13 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Reflection;
+using System.Runtime.Serialization;
 using System.Web.Routing;
 using FubuCore;
+using FubuCore.CommandLine;
 using FubuMVC.Core;
 using FubuMVC.Core.Endpoints;
 using FubuMVC.Core.Packaging;
+using FubuMVC.Core.Runtime.Files;
 using FubuMVC.Core.Urls;
 using FubuMVC.OwinHost;
+using FubuMVC.OwinHost.Middleware.StaticFiles;
 using Microsoft.Owin.Hosting;
 using Microsoft.Owin.Hosting.Builder;
 using Microsoft.Owin.Hosting.Engine;
@@ -19,32 +25,16 @@ using Owin;
 
 namespace FubuMVC.Katana
 {
-    public static class FubuApplicationExtensions
-    {
-        /// <summary>
-        /// Creates an embedded web server for this FubuApplication running at the designated physical path and port
-        /// </summary>
-        /// <param name="application"></param>
-        /// <param name="physicalPath">The physical path of the web server path.  This only needs to be set if the location for application content like scripts or views is at a different place than the current AppDomain base directory</param>
-        /// <param name="port">The port to run the web server at.  The web server will try other port numbers starting at this point if it is unable to bind to this specific port</param>
-        /// <returns></returns>
-        public static EmbeddedFubuMvcServer RunEmbedded(this FubuApplication application, string physicalPath = null,
-                                                        int port = 5500)
-        {
-            return new EmbeddedFubuMvcServer(application.Bootstrap(), physicalPath, port);
-        }
-    }
-
     /// <summary>
     /// Embeds and runs a FubuMVC application in a normal process using the Web API self host libraries
     /// </summary>
     public class EmbeddedFubuMvcServer : IDisposable
     {
-        private readonly IDisposable _server;
-        private readonly IUrlRegistry _urls;
-        private readonly IServiceLocator _services;
-        private readonly EndpointDriver _endpoints;
-        private readonly string _baseAddress;
+        private IDisposable _server;
+        private IUrlRegistry _urls;
+        private IServiceLocator _services;
+        private EndpointDriver _endpoints;
+        private string _baseAddress;
         private readonly FubuRuntime _runtime;
 
         /// <summary>
@@ -53,15 +43,16 @@ namespace FubuMVC.Katana
         /// <typeparam name="T"></typeparam>
         /// <param name="physicalPath">The physical path of the web server path.  This only needs to be set if the location for application content like scripts or views is at a different place than the current AppDomain base directory.  If this value is blank, the embedded server will attempt to find a folder with the same name as the assembly that contains the IApplicationSource</param>
         /// <param name="port">The port to run the web server at.  The web server will try other port numbers starting at this point if it is unable to bind to this specific port</param>
+        /// <param name="autoFindPort">If true, use the first unused port from 5500 and up</param>
         /// <returns></returns>
-        public static EmbeddedFubuMvcServer For<T>(string physicalPath = null, int port = 5500) where T : IApplicationSource, new()
+        public static EmbeddedFubuMvcServer For<T>(string physicalPath = null, int port = 5500, bool autoFindPort = false) where T : IApplicationSource, new()
         {
             if (physicalPath.IsEmpty())
             {
                 physicalPath = TryToGuessApplicationPath(typeof (T)) ?? AppDomain.CurrentDomain.BaseDirectory;
             }
 
-            return new EmbeddedFubuMvcServer(new T().BuildApplication().Bootstrap(), physicalPath, port);
+            return new EmbeddedFubuMvcServer(new T().BuildApplication().Bootstrap(), physicalPath, port, autoFindPort);
 
         }
 
@@ -76,34 +67,105 @@ namespace FubuMVC.Katana
         }
 
 
-        public EmbeddedFubuMvcServer(FubuRuntime runtime, string physicalPath = null, int port = 5500)
+        public EmbeddedFubuMvcServer(FubuRuntime runtime, string physicalPath = null, int port = 5500, bool autoFindPort = false)
         {
-            _runtime = runtime;
+            if (autoFindPort)
+            {
+                port = PortFinder.FindPort(5500);
+            }
 
+            _runtime = runtime;
+            _services = _runtime.Factory.Get<IServiceLocator>();
+
+            // before anything else, make sure there is no server on the settings
+            // We're doing this hokey-pokey to ensure that things don't get double 
+            // disposed
+            var settings = runtime.Factory.Get<KatanaSettings>();
+            var peer = settings.EmbeddedServer;
+
+            if (peer == null)
+            {
+                startAllNew(runtime, physicalPath, port);
+            }
+            else
+            {
+                takeOverFromExistingServer(peer, settings);
+            }
+        }
+
+        private void startAllNew(FubuRuntime runtime, string physicalPath, int port)
+        {
+            startServer(runtime.Factory.Get<OwinSettings>(), runtime.Routes, physicalPath, port);
+
+            _urls = _runtime.Factory.Get<IUrlRegistry>();
+            _services = _runtime.Factory.Get<IServiceLocator>();
+
+            buildEndpointDriver(port);
+        }
+
+        private void takeOverFromExistingServer(EmbeddedFubuMvcServer peer, KatanaSettings settings)
+        {
+            _urls = peer.Urls;
+            _services = peer.Services;
+            _server = peer._server;
+            _baseAddress = peer._baseAddress;
+            _endpoints = peer.Endpoints;
+
+            settings.EmbeddedServer = null;
+        }
+
+        private void buildEndpointDriver(int port)
+        {
+            _baseAddress = "http://localhost:" + port;
+            UrlContext.Stub(_baseAddress);
+            _endpoints = new EndpointDriver(_urls, _baseAddress);
+        }
+
+        public EmbeddedFubuMvcServer(KatanaSettings settings, IUrlRegistry urls, IServiceLocator services, IList<RouteBase> routes)
+        {
+            _urls = urls;
+            _services = services;
+
+            startServer(services.GetInstance<OwinSettings>(), routes, AppDomain.CurrentDomain.BaseDirectory, settings.Port);
+            buildEndpointDriver(settings.Port);
+        }
+
+        private void startServer(OwinSettings settings, IList<RouteBase> routes, string physicalPath, int port)
+        {
             var parameters = new StartOptions {Port = port};
             parameters.Urls.Add("http://*:" + port); //for netsh http add urlacl
 
-            FubuMvcPackageFacility.PhysicalRootPath = physicalPath ?? AppDomain.CurrentDomain.BaseDirectory;
-            Action<IAppBuilder> startup = FubuOwinHost.ToStartup(_runtime);
+            // Adding the static middleware
+            settings.AddMiddleware<StaticFileMiddleware>(_services.GetInstance<IFubuApplicationFiles>(), settings);
+
+            if (physicalPath != null) FubuMvcPackageFacility.PhysicalRootPath = physicalPath;
+            Action<IAppBuilder> startup = FubuOwinHost.ToStartup(settings, routes);
 
             var context = new StartContext(parameters)
             {
-                Startup = startup
+                Startup = startup,
             };
 
-            var engine = new HostingEngine(new AppBuilderFactory(), new TraceOutputFactory(), new AppLoader(new IAppLoaderFactory[0]),
-                                           new ServerFactoryLoader(new ServerFactoryActivator(new ServiceProvider())));
+            settings.EnvironmentData[OwinConstants.AppMode] = FubuMode.Mode().ToLower();
+            context.EnvironmentData.AddRange(settings.EnvironmentData.ToDictionary());
 
-            _server = engine.Start(context);
+            var engine = new HostingEngine(new AppBuilderFactory(), new TraceOutputFactory(),
+                new AppLoader(new IAppLoaderFactory[0]),
+                new ServerFactoryLoader(new ServerFactoryActivator(new ServiceProvider())));
 
-            _baseAddress = "http://localhost:" + port;
+            try
+            {
+                _server = engine.Start(context);
+            }
+            catch (TargetInvocationException e)
+            {
+                if (e.InnerException != null && e.InnerException.Message.Contains("Access is denied"))
+                {
+                    throw new KatanaRightsException(e.InnerException);
+                }
 
-            _urls = _runtime.Factory.Get<IUrlRegistry>();
-
-            UrlContext.Stub(_baseAddress);
-
-            _services = _runtime.Factory.Get<IServiceLocator>();
-            _endpoints = new EndpointDriver(_urls, _baseAddress);
+                throw;
+            }
         }
 
         public FubuRuntime Runtime
@@ -133,12 +195,39 @@ namespace FubuMVC.Katana
 
         public void Dispose()
         {
+            if (_runtime != null) _runtime.Dispose();
             _server.Dispose();
         }
 
         public string BaseAddress
         {
             get { return _baseAddress; }
+        }
+    }
+
+    [Serializable]
+    public class KatanaRightsException : Exception
+    {
+        
+
+        public KatanaRightsException(Exception innerException) : base(string.Empty, innerException)
+        {
+        }
+
+        protected KatanaRightsException(SerializationInfo info, StreamingContext context) : base(info, context)
+        {
+        }
+
+        public override string Message
+        {
+            get
+            {
+                return @"
+To use Katana hosting, you need to either run with administrative rights 
+or optionally, use 'netsh http add urlacl url=http://+:80/MyUri user=DOMAIN\\user' at the command line. 
+See http://msdn.microsoft.com/en-us/library/ms733768.aspx for more information.
+".Trim();
+            }
         }
     }
 }

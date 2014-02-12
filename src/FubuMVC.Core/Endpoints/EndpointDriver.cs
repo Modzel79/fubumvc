@@ -8,6 +8,7 @@ using System.Text;
 using System.Web.Script.Serialization;
 using System.Xml.Serialization;
 using FubuCore;
+using FubuCore.Dates;
 using FubuCore.Reflection;
 using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Urls;
@@ -242,9 +243,8 @@ namespace FubuMVC.Core.Endpoints
         /// <param name="etag"></param>
         /// <param name="configure"> </param>
         /// <returns></returns>
-        public HttpResponse Get(string url, string acceptType = "*/*", string etag = null, Action<HttpWebRequest> configure = null, string acceptEncoding = null)
+        public HttpResponse Get(string url, string acceptType = "*/*", string etag = null, Action<HttpWebRequest> configure = null, string acceptEncoding = null, DateTime? ifModifiedSince = null)
         {
-            Debug.WriteLine("EndpointDriver getting url {0}".ToFormat(url));
             url = url.ToAbsoluteUrl(_baseUrl);
 
             var request = (HttpWebRequest) WebRequest.Create(url.ToAbsoluteUrl());
@@ -259,6 +259,11 @@ namespace FubuMVC.Core.Endpoints
                 configure(request);
             }
 
+            if (ifModifiedSince.HasValue)
+            {
+                request.As<HttpWebRequest>().IfModifiedSince = ifModifiedSince.Value;
+            }
+
             if (etag.IsNotEmpty())
             {
                 request.Headers[HttpRequestHeader.IfNoneMatch] = etag;
@@ -268,6 +273,16 @@ namespace FubuMVC.Core.Endpoints
             {
                 request.Headers[HttpRequestHeader.AcceptEncoding] = acceptEncoding;
             }
+
+            return request.ToHttpCall();
+        }
+
+        public HttpResponse Head(string url)
+        {
+            url = url.ToAbsoluteUrl(_baseUrl);
+
+            var request = (HttpWebRequest)WebRequest.Create(url.ToAbsoluteUrl());
+            request.Method = "HEAD";
 
             return request.ToHttpCall();
         }
@@ -326,6 +341,6 @@ namespace FubuMVC.Core.Endpoints
             return WebRequest.Create(url);
         }
 
-        
+
     }
 }

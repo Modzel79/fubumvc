@@ -103,7 +103,7 @@ namespace FubuMVC.Core.Registration.Nodes
         {
             if (ReferenceEquals(null, other)) return false;
             if (ReferenceEquals(this, other)) return true;
-            return Equals(other.HandlerType, HandlerType) && other.Method.Matches(Method);
+            return other.HandlerType.FullName.Equals(HandlerType.FullName) && other.Method.Matches(Method);
         }
 
         public override bool Equals(object obj)
@@ -118,8 +118,8 @@ namespace FubuMVC.Core.Registration.Nodes
         {
             unchecked
             {
-                return ((HandlerType != null ? HandlerType.GetHashCode() : 0)*397) ^
-                       (Method != null ? Method.GetHashCode() : 0);
+                return ((HandlerType != null ? HandlerType.FullName.GetHashCode() : 0)*397) ^
+                       (Method != null ? Method.Name.GetHashCode() : 0);
             }
         }
 

@@ -6,6 +6,10 @@ namespace AssemblyPackage
 {
     public class AssemblyPackageRegistry : FubuPackageRegistry
     {
+        public AssemblyPackageRegistry()
+        {
+
+        }
     }
 
     public class AssemblyEndpoint

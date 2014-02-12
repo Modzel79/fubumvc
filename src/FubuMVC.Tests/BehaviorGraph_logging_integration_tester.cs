@@ -35,6 +35,8 @@ namespace FubuMVC.Tests
             theGraph = FubuApplication.For(theRegistry).StructureMap(container)
                 .Bootstrap().Factory.Get<BehaviorGraph>();
 
+            theGraph.BehaviorFor<LoggedEndpoint>(x => x.get_logged_hello()).ShouldNotBeNull();
+
             theLogs = container.GetInstance<ConfigLog>();
         }
 

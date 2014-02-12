@@ -116,6 +116,11 @@ namespace FubuMVC.StructureMap
             _registration(serviceType, def);
         }
 
+        public void Shutdown()
+        {
+            _container.SafeDispose();
+        }
+
         public T Get<T>()
         {
             return _container.GetInstance<T>();
@@ -124,11 +129,6 @@ namespace FubuMVC.StructureMap
         public IEnumerable<T> GetAll<T>()
         {
             return _container.GetAllInstances<T>();
-        }
-
-        public IEnumerable<IInstaller> GetAllInstallers()
-        {
-            return _container.GetAllInstances<IInstaller>();
         }
 
         public static IContainer GetBasicFubuContainer()
@@ -161,7 +161,7 @@ namespace FubuMVC.StructureMap
 
         public void Dispose()
         {
-            _container.SafeDispose();
+            // DO NOTHING BECAUSE THIS CAUSED A STACKOVERFLOW TO DISPOSE THE CONTAINER HERE.
         }
     }
 

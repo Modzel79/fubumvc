@@ -6,10 +6,13 @@ using FubuCore.Formatting;
 using FubuCore.Logging;
 using FubuCore.Reflection;
 using FubuMVC.Core.Behaviors;
+using FubuMVC.Core.Diagnostics;
 using FubuMVC.Core.Http.Compression;
 using FubuMVC.Core.Http.Cookies;
 using FubuMVC.Core.Registration;
+using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Registration.Querying;
+using FubuMVC.Core.Resources.Conneg;
 using FubuMVC.Core.Routing;
 using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Runtime.Conditionals;
@@ -27,6 +30,8 @@ namespace FubuMVC.Core
     {
         public CoreServiceRegistry()
         {
+            SetServiceIfNone(typeof(AppReloaded), ObjectDef.ForValue(new AppReloaded()));
+
             var stringifier = new Stringifier();
             SetServiceIfNone(stringifier);
             SetServiceIfNone<IStringifier>(stringifier); // Hack!
@@ -35,11 +40,11 @@ namespace FubuMVC.Core
             SetServiceIfNone<IOutputWriter, OutputWriter>();
 
             SetServiceIfNone<IUrlRegistry, UrlRegistry>();
-			SetServiceIfNone<IChainUrlResolver, ChainUrlResolver>();
+            SetServiceIfNone<IChainUrlResolver, ChainUrlResolver>();
             SetServiceIfNone<IUrlTemplatePattern, NulloUrlTemplate>();
             SetServiceIfNone<IJsonWriter, JsonWriter>();
 
-            SetServiceIfNone<IFlash, CookieFlashProvider>();
+            SetServiceIfNone<IFlash, FlashProvider>();
             SetServiceIfNone<IRequestDataProvider, RequestDataProvider>();
 
             SetServiceIfNone<IFubuRequest, FubuRequest>();
@@ -59,7 +64,7 @@ namespace FubuMVC.Core
 
             SetServiceIfNone<ISessionState, SimpleSessionState>();
 
-            
+
 
 
             SetServiceIfNone<IFileSystem, FileSystem>();
@@ -71,8 +76,9 @@ namespace FubuMVC.Core
             SetServiceIfNone<ISmartRequest, FubuSmartRequest>();
 
 
-            AddService<IFormatter>(typeof (JsonFormatter));
-            AddService<IFormatter>(typeof (XmlFormatter));
+            AddService<IFormatter>(typeof(JsonFormatter));
+            AddService<IFormatter>(typeof(XmlFormatter));
+            SetServiceIfNone<IResourceNotFoundHandler, DefaultResourceNotFoundHandler>();
 
             SetServiceIfNone<IConditionalService, ConditionalService>();
 

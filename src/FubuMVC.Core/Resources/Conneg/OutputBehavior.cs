@@ -19,13 +19,15 @@ namespace FubuMVC.Core.Resources.Conneg
         private readonly IOutputWriter _writer;
         private readonly IEnumerable<IMedia<T>> _media;
         private readonly ILogger _logger;
+        private readonly IResourceNotFoundHandler _notFoundHandler;
 
-        public OutputBehavior(IFubuRequest request, IOutputWriter writer, IEnumerable<IMedia<T>> media, ILogger logger) : base(PartialBehavior.Executes)
+        public OutputBehavior(IFubuRequest request, IOutputWriter writer, IEnumerable<IMedia<T>> media, ILogger logger, IResourceNotFoundHandler notFoundHandler) : base(PartialBehavior.Executes)
         {
             _request = request;
             _writer = writer;
             _media = media;
             _logger = logger;
+            _notFoundHandler = notFoundHandler;
         }
 
         protected override void afterInsideBehavior()
@@ -33,28 +35,48 @@ namespace FubuMVC.Core.Resources.Conneg
             Write();
         }
 
+        // SAMPLE: output-behavior-mechanics
         public void Write()
         {
-            
+            // If the resource is NOT found, return 
+            // invoke the 404 handler
+            var resource = _request.Get<T>();
+            if (resource == null)
+            {
+                _writer.WriteResponseCode(HttpStatusCode.NotFound);
+                _notFoundHandler.HandleResourceNotFound<T>();
 
+                return;
+            }
+
+            // Resolve our CurrentMimeType object from the 
+            // HTTP request that we use to represent
+            // the mimetypes of the current request
             var mimeTypes = _request.Get<CurrentMimeType>();
+
+            // Select the appropriate media writer
+            // based on the mimetype and other runtime
+            // conditions
             var media = SelectMedia(mimeTypes);
 
             if (media == null)
             {
-                // TODO -- better error message?
+                // If no matching media can be found, write HTTP 406
                 _writer.WriteResponseCode(HttpStatusCode.NotAcceptable);
                 _writer.Write(MimeType.Text, "406:  Not acceptable");
             }
             else
             {
-                var resource = _request.Get<T>();
+                // Write the media based on a matching media type
                 var outputMimetype = mimeTypes.SelectFirstMatching(media.Mimetypes);
                 media.Write(outputMimetype, resource);
             }
 
+            // Write any output headers exposed by the IHaveHeaders
+            // interface on the resource type
             WriteHeaders();
         }
+        // ENDSAMPLE
 
         public void WriteHeaders()
         {
