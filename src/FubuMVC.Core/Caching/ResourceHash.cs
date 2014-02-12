@@ -31,6 +31,14 @@ namespace FubuMVC.Core.Caching
             return For(new VaryByResource(chain));
         }
 
+        public static string For(Registration.Nodes.BehaviorChain getBlobChain, object request)
+        {
+            var varyByResource = new SimpleVaryBy();
+            varyByResource.With("chain", getBlobChain.UniqueId.ToString());
+            getBlobChain.Route.Input.RouteParameters.Each(x => varyByResource.With(x.Name, Convert.ToString(x.GetRawValue(request))));
+            return For(varyByResource);
+        }
+
         public string CreateHash()
         {
             return Describe().Select(x => "{0}={1}".ToFormat(x.Key, x.Value)).Join("&").ToHash();

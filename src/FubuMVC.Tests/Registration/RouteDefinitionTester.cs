@@ -104,7 +104,7 @@ namespace FubuMVC.Tests.Registration
             var url = new RouteInput<SampleViewModel>("my/sample");
             url.AddRouteInput(x => x.InPath);
             url.AddRouteInput(x => x.InPath);
-            url.AddRouteInput(new RouteParameter(ReflectionHelper.GetAccessor<SampleViewModel>(x=>x.InPath)), false);
+            url.AddRouteInput(new RouteAccessorParameter(ReflectionHelper.GetAccessor<SampleViewModel>(x=>x.InPath)), false);
             url.RouteParameters.ShouldHaveCount(1);
         }
 
@@ -360,7 +360,7 @@ namespace FubuMVC.Tests.Registration
                                   x => x.InQueryString,
                                   x => x.AlsoInQueryString
                               };
-            var inputs = props.Select(x => new RouteParameter(ReflectionHelper.GetAccessor(x)));
+            var inputs = props.Select(x => new RouteAccessorParameter(ReflectionHelper.GetAccessor(x)));
             url.AddQueryInputs(inputs);
 
             url.CreateUrlFromInput(new SampleViewModel
@@ -517,7 +517,7 @@ namespace FubuMVC.Tests.Registration
             {
                 InPath = "5"
             };
-            var routeInput = new RouteParameter(accessor);
+            var routeInput = new RouteAccessorParameter(accessor);
 
             routeInput.Substitute(viewModel, "test/edit/{InPath}").ShouldEqual("test/edit/5");
         }

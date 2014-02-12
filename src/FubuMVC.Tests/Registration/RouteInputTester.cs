@@ -15,7 +15,7 @@ namespace FubuMVC.Tests.Registration
         [SetUp]
         public void SetUp()
         {
-            _parameter = new RouteParameter(ReflectionHelper.GetAccessor<FakeInput>(x => x.Code));
+            _parameter = new RouteAccessorParameter(ReflectionHelper.GetAccessor<FakeInput>(x => x.Code));
         }
 
         [Test]
