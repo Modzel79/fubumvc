@@ -73,13 +73,13 @@ namespace FubuMVC.Core.Registration.Routes
     {
         // Use the first property to get the name
         // use the full blown accessor to get the value
-        private readonly Regex _regex;
-        private readonly Regex _regexGreedy;
+        private readonly Lazy<Regex> _regex;
+        private readonly Lazy<Regex> _regexGreedy;
 
         public RouteParameter()
         {
-            _regex = new Regex(@"{\*?" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled);
-            _regexGreedy = new Regex(@"{\*" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled);
+            _regex = new Lazy<Regex>(() => new Regex(@"{\*?" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled));
+            _regexGreedy = new Lazy<Regex>(() => new Regex(@"{\*" + Name + @"(?:\:.*?)?}", RegexOptions.Compiled));
         }
 
         public abstract string Name { get;  }
@@ -100,8 +100,8 @@ namespace FubuMVC.Core.Registration.Routes
 
         private string substitute(string url, string parameterValue)
         {
-            var encodedValue = _regexGreedy.IsMatch(url) ? encodeParameterValue(parameterValue) : parameterValue.UrlEncoded();
-            return _regex.Replace(url, encodedValue);
+            var encodedValue = _regexGreedy.Value.IsMatch(url) ? encodeParameterValue(parameterValue) : parameterValue.UrlEncoded();
+            return _regex.Value.Replace(url, encodedValue);
         }
 
         private static string encodeParameterValue(string parameterValue)
