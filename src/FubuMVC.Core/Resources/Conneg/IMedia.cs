@@ -3,11 +3,17 @@ using FubuMVC.Core.Runtime.Conditionals;
 
 namespace FubuMVC.Core.Resources.Conneg
 {
-    public interface IMedia<in T>
+    public interface IMedia
     {
         IEnumerable<string> Mimetypes { get; }
         IConditional Condition { get; }
-        void Write(string mimeType, T resource);
-        bool MatchesRequest();
+
+        object Writer { get; }
+    }
+
+    public interface IMedia<in T> : IMedia
+    {
+        void Write(string mimeType, IFubuRequestContext context, T resource);
+        bool MatchesRequest(IFubuRequestContext context);
     }
 }

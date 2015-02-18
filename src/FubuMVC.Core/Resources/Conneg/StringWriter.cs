@@ -5,21 +5,18 @@ namespace FubuMVC.Core.Resources.Conneg
 {
     public class StringWriter : IMediaWriter<string>
     {
-        private readonly IOutputWriter _writer;
-
-        public StringWriter(IOutputWriter writer)
+        public void Write(string mimeType, IFubuRequestContext context, string resource)
         {
-            _writer = writer;
-        }
-
-        public void Write(string mimeType, string resource)
-        {
-            _writer.Write(MimeType.Text, resource);
+            context.Writer.Write(mimeType, resource);
         }
 
         public IEnumerable<string> Mimetypes
         {
-            get { yield return MimeType.Text.Value; }
+            get
+            {
+                yield return MimeType.Text.Value;
+                yield return MimeType.Html.Value;
+            }
         }
     }
 }

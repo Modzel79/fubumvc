@@ -25,6 +25,7 @@ namespace FubuMVC.Core.Resources.Conneg
         void DescribesItself.Describe(Description description)
         {
             description.Title = "Media Writer for " + typeof (T).Name;
+            description.ShortDescription = null;
             description.Properties["Mimetypes"] = Mimetypes.Join(", ");
             description.Children["Writer"] = Description.For(_writer);
             description.Children["Condition"] = Description.For(_condition);
@@ -35,20 +36,26 @@ namespace FubuMVC.Core.Resources.Conneg
             get { return _writer.Mimetypes; }
         }
 
-        public void Write(string mimeType, T resource)
+        public void Write(string mimeType, IFubuRequestContext context, T resource)
         {
-            _writer.Write(mimeType, resource);
+            _writer.Write(mimeType, context, resource);
         }
 
-        public bool MatchesRequest()
+        public bool MatchesRequest(IFubuRequestContext context)
         {
-            return _condition.ShouldExecute();
+            return _condition.ShouldExecute(context);
         }
 
         public IConditional Condition
         {
             get { return _condition; }
         }
+
+        object IMedia.Writer
+        {
+            get { return Writer; }
+        }
+
 
         private string debuggerDisplay()
         {

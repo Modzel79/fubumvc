@@ -1,6 +1,7 @@
 ﻿using FubuCore.Binding.InMemory;
 using FubuCore.Reflection;
 using FubuMVC.Core.Http;
+using FubuMVC.Core.Http.Owin;
 using FubuMVC.Tests.Urls;
 using FubuTestingSupport;
 using NUnit.Framework;
@@ -34,12 +35,17 @@ namespace FubuMVC.Tests.Http
         public void should_populate_relativeurl_from_current_http_request()
         {
 
-            var stubCurrentHttpRequest = new StubCurrentHttpRequest {TheRelativeUrl = "~/foo"};
+            
+
+            var stubCurrentHttpRequest = OwinHttpRequest.ForTesting().FullUrl("http://server/foo");
+                
+                
+                
             var model =
                 BindingScenario<RelativeUrlModel>.For(x =>
                                                           {
                                                               x.BindPropertyWith<CurrentRequestRelativeUrlPropertyBinder>(f => f.RelativeUrl);
-                                                              x.Service<ICurrentHttpRequest>(stubCurrentHttpRequest);
+                                                              x.Service<IHttpRequest>(stubCurrentHttpRequest);
                                                           })
                                                           .Model;
             model.RelativeUrl.ShouldEqual(stubCurrentHttpRequest.RelativeUrl());

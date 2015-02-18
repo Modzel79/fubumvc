@@ -1,48 +1,42 @@
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using FubuCore;
 using FubuCore.Descriptions;
 using FubuCore.Logging;
 using FubuMVC.Core.Behaviors;
 using FubuMVC.Core.Http;
 using FubuMVC.Core.Runtime;
-using FubuCore;
 
 namespace FubuMVC.Core.Resources.Conneg
 {
     public class InputBehavior<T> : BasicBehavior where T : class
     {
-        private readonly IOutputWriter _writer;
-        private readonly IFubuRequest _request;
-        private readonly IEnumerable<IReader<T>> _readers;
-        private readonly ILogger _logger;
+        private readonly IFubuRequestContext _context;
+        private readonly IReaderCollection<T> _readers;
 
-        public InputBehavior(IOutputWriter writer, IFubuRequest request, IEnumerable<IReader<T>> readers, ILogger logger) : base(PartialBehavior.Executes)
+        public InputBehavior(IFubuRequestContext context, IReaderCollection<T> readers) : base(PartialBehavior.Executes)
         {
-            _writer = writer;
-            _request = request;
+            _context = context;
             _readers = readers;
-            _logger = logger;
         }
 
         // SAMPLE: input-behavior-mechanics
         protected override DoNext performInvoke()
         {
             // Might already be there from a different way
-            if (_request.Has<T>()) return DoNext.Continue;
+            if (_context.Models.Has<T>()) return DoNext.Continue;
 
             // Resolve our CurrentMimeType object from the 
             // HTTP request that we use to represent
             // the mimetypes of the current request
-            var mimeTypes = _request.Get<CurrentMimeType>();
+            var mimeTypes = _context.Models.Get<CurrentMimeType>();
 
             // Choose the first reader that says it
             // can read the mimetype from the 
             // 'content-type' header in the request
-            var reader = ChooseReader(mimeTypes);
+            var reader = _readers.ChooseReader(mimeTypes, _context);
 
-            _logger.DebugMessage(() => new ReaderChoice(mimeTypes, reader));
+            _context.Logger.DebugMessage(() => new ReaderChoice(mimeTypes, reader));
 
             if (reader == null)
             {
@@ -54,22 +48,18 @@ namespace FubuMVC.Core.Resources.Conneg
             }
 
             // Use the selected reader
-            var target = reader.Read(mimeTypes.ContentType);
-            _request.Set(target);
+            var target = reader.Read(mimeTypes.ContentType, _context);
+            _context.Models.Set(target);
 
             return DoNext.Continue;
         }
+
         // ENDSAMPLE
 
         private void failWithInvalidMimeType()
         {
-            _writer.WriteResponseCode(HttpStatusCode.UnsupportedMediaType);
-            _writer.Write(MimeType.Text, "415:  Unsupported Media Type");
-        }
-
-        public IReader<T> ChooseReader(CurrentMimeType mimeTypes)
-        {
-            return _readers.FirstOrDefault(x => x.Mimetypes.Contains(mimeTypes.ContentType));
+            _context.Writer.WriteResponseCode(HttpStatusCode.UnsupportedMediaType);
+            _context.Writer.Write(MimeType.Text, "415:  Unsupported Media Type");
         }
     }
 
@@ -86,8 +76,8 @@ namespace FubuMVC.Core.Resources.Conneg
 
         public void Describe(Description description)
         {
-            description.Title = _reader == null 
-                ? "Unable to select a reader for content-type '{0}'".ToFormat(_mimeType.ContentType) 
+            description.Title = _reader == null
+                ? "Unable to select a reader for content-type '{0}'".ToFormat(_mimeType.ContentType)
                 : "Selected reader '{0}' for content-type '{1}'".ToFormat(_reader.Title, _mimeType.ContentType);
         }
     }

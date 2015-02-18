@@ -1,10 +1,12 @@
 using System;
 using FubuCore;
 using FubuMVC.Core;
+using FubuMVC.Core.Continuations;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Security;
 using FubuMVC.StructureMap;
+using FubuMVC.Tests.Urls;
 using FubuTestingSupport;
 using NUnit.Framework;
 using System.Linq;
@@ -51,7 +53,7 @@ namespace FubuMVC.Tests.Security
             node.AddRole("RoleA");
 
             var authorizationBehavior = toBehavior(node);
-            authorizationBehavior.Policies.Count.ShouldEqual(1);
+            authorizationBehavior.Policies.Count().ShouldEqual(1);
             authorizationBehavior.Policies.First().ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleA");
         }
 
@@ -68,38 +70,6 @@ namespace FubuMVC.Tests.Security
         }
 
 
-
-        [Test]
-        public void adding_a_model_rule_policy()
-        {
-            var node = new AuthorizationNode();
-            node.AddPolicy<UrlModel, UrlModelShouldStartWithJ>();
-
-            toBehavior(node).Policies.Single().ShouldBeOfType<AuthorizationPolicy<UrlModel>>()
-                .InnerRule.ShouldBeOfType<UrlModelShouldStartWithJ>();
-        }
-
-        [Test]
-        public void adding_a_rule()
-        {
-            var node = new AuthorizationNode();
-            node.AddRule(typeof (UrlModelShouldStartWithJ));
-
-            toBehavior(node).Policies.Single().ShouldBeOfType<AuthorizationPolicy<UrlModel>>()
-                .InnerRule.ShouldBeOfType<UrlModelShouldStartWithJ>();
-        }
-
-        [Test]
-        public void adding_a_type_that_is_not_a_rule()
-        {
-            var node = new AuthorizationNode();
-
-            Exception<ArgumentOutOfRangeException>.ShouldBeThrownBy(() =>
-            {
-                node.AddRule(GetType());
-            });
-        }
-
         [Test]
         public void adding_multiple_roles()
         {
@@ -109,69 +79,111 @@ namespace FubuMVC.Tests.Security
             node.AddRole("RoleC");
 
             var authorizationBehavior = toBehavior(node);
-            authorizationBehavior.Policies.Count.ShouldEqual(3);
+            authorizationBehavior.Policies.Count().ShouldEqual(3);
 
-            authorizationBehavior.Policies[0].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleA");
-            authorizationBehavior.Policies[1].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleB");
-            authorizationBehavior.Policies[2].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleC");
+            authorizationBehavior.Policies.ToArray()[0].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleA");
+            authorizationBehavior.Policies.ToArray()[1].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleB");
+            authorizationBehavior.Policies.ToArray()[2].ShouldBeOfType<AllowRole>().Role.ShouldEqual("RoleC");
         }
 
+
+        [Test]
+        public void use_no_custom_auth_failure_handler()
+        {
+            var node = new AuthorizationNode();
+            var def = node.As<IContainerModel>().ToObjectDef();
+
+            def.DependencyFor<IAuthorizationFailureHandler>().ShouldBeNull();
+        }
+
+        [Test]
+        public void use_custom_auth_failure_handler_by_type()
+        {
+            var node = new AuthorizationNode();
+            node.FailureHandler<FakeAuthHandler>();
+
+            var def = node.As<IContainerModel>().ToObjectDef();
+
+            def.DependencyFor<IAuthorizationFailureHandler>().ShouldBeOfType<ConfiguredDependency>()
+                .Definition.Type.ShouldEqual(typeof (FakeAuthHandler));
+        }
+
+        [Test]
+        public void use_custom_failure_handler_by_value()
+        {
+            var node = new AuthorizationNode();
+
+            var handler = new FakeAuthHandler();
+
+            node.FailureHandler(handler);
+
+            var def = node.As<IContainerModel>().ToObjectDef();
+
+            def.DependencyFor<IAuthorizationFailureHandler>().ShouldBeOfType<ConfiguredDependency>()
+                .Definition.Value.ShouldBeTheSameAs(handler);
+        }
+
+        [Test]
+        public void add_type_for_a_policy()
+        {
+            var node = new AuthorizationNode();
+            node.Add(typeof(AlwaysAllowPolicy));
+
+            node.Policies.Single().ShouldBeOfType<AlwaysAllowPolicy>();
+        }
+
+        [Test]
+        public void add_type_for_check()
+        {
+            var node = new AuthorizationNode();
+            node.Add(typeof(FakeAuthCheck));
+
+            node.Policies.Single().ShouldBeOfType<AuthorizationCheckPolicy<FakeAuthCheck>>();
+        }
+
+        [Test]
+        public void invalid_add_type()
+        {
+            Exception<ArgumentOutOfRangeException>.ShouldBeThrownBy(() => {
+                new AuthorizationNode().Add(GetType());
+            });
+        }
+
+        [Test]
+        public void invalid_add_type_if_policy_type_has_args()
+        {
+            Exception<ArgumentOutOfRangeException>.ShouldBeThrownBy(() =>
+            {
+                new AuthorizationNode().Add(typeof(PolicyWithArgs));
+            });
+        }
     }
 
-    [TestFixture]
-    public class when_creating_an_object_def_for_an_endpoint_authorizor
+    public class PolicyWithArgs : IAuthorizationPolicy
     {
-        private ObjectDef endpointObjectDef;
-        private BehaviorChain chain;
-
-        [SetUp]
-        public void SetUp()
+        public PolicyWithArgs(int number)
         {
-            chain = new BehaviorChain();
-
-            var node = new AuthorizationNode();
-            node.AddRole("RoleA");
-            node.AddRole("RoleB");
-            node.AddRole("RoleC");
-
-            chain.AddToEnd(node);
-
-            endpointObjectDef = node.As<IAuthorizationRegistration>().ToEndpointAuthorizorObjectDef();
         }
 
-        [Test]
-        public void the_type_should_be_endpoint_authorizor()
+        public AuthorizationRight RightsFor(IFubuRequestContext request)
         {
-            endpointObjectDef.Type.ShouldEqual(typeof (EndPointAuthorizor));
+            throw new NotImplementedException();
         }
+    }
 
-        [Test]
-        public void the_name_should_be_the_behavior_id_from_the_parent_chain()
+    public class FakeAuthCheck : IAuthorizationCheck
+    {
+        public AuthorizationRight Check()
         {
-            endpointObjectDef.Name.ShouldEqual(chain.Top.As<IContainerModel>().ToObjectDef().Name);
+            throw new NotImplementedException();
         }
+    }
 
-        [Test]
-        public void should_have_a_list_dependency_for_the_authorization_policies()
+    public class FakeAuthHandler : IAuthorizationFailureHandler
+    {
+        public FubuContinuation Handle()
         {
-            var dependency = endpointObjectDef.Dependencies.Single().ShouldBeOfType<ListDependency>();
-            dependency.Items.Select(x => x.Value.ShouldBeOfType<AllowRole>().Role)
-                .ShouldHaveTheSameElementsAs("RoleA", "RoleB", "RoleC");
-
-
-        
-        }
-
-        [Test]
-        public void make_sure_we_can_actually_build_it()
-        {
-            var instance = new ObjectDefInstance(endpointObjectDef);
-            var container = new Container();
-
-            container.GetInstance<IEndPointAuthorizor>(instance)
-                .ShouldBeOfType<EndPointAuthorizor>()
-                .Policies.Cast<AllowRole>().Select(x => x.Role)
-                .ShouldHaveTheSameElementsAs("RoleA", "RoleB", "RoleC");
+            throw new NotImplementedException();
         }
     }
 }

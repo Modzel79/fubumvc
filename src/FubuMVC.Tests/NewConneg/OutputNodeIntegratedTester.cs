@@ -2,10 +2,10 @@ using System;
 using System.Collections.Generic;
 using FubuCore;
 using FubuMVC.Core;
-using FubuMVC.Core.Behaviors.Conditional;
 using FubuMVC.Core.Http;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Resources.Conneg;
+using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Runtime.Conditionals;
 using FubuMVC.Core.Runtime.Formatters;
 using FubuMVC.StructureMap;
@@ -29,16 +29,15 @@ namespace FubuMVC.Tests.NewConneg
         public void SetUp()
         {
             var node = new OutputNode(typeof (Address));
-            node.AddFormatter<JsonFormatter>();
-            node.AddFormatter<XmlFormatter>();
-            node.AddWriter<FakeAddressWriter>().Condition<SomeConditional>();
-            
+            node.Add(new JsonSerializer());
+            node.Add(new XmlFormatter());
+            node.Add(new FakeAddressWriter(), new SomeConditional());
 
             var container = StructureMapContainerFacility.GetBasicFubuContainer();
             container.Configure(x =>
             {
                 // Need a stand in value
-                x.For<IStreamingData>().Use(MockRepository.GenerateMock<IStreamingData>());
+                x.For<IHttpRequest>().Use(MockRepository.GenerateMock<IHttpRequest>());
             });
 
             var objectDef = node.As<IContainerModel>().ToObjectDef();
@@ -54,18 +53,11 @@ namespace FubuMVC.Tests.NewConneg
         }
 
         [Test]
-        public void has_two_media()
-        {
-            theInputBehavior.Media.Count().ShouldEqual(3);
-        }
-
-
-        [Test]
         public void first_media_has_the_formatter()
         {
             theInputBehavior.Media.First()
                 .ShouldBeOfType<Media<Address>>()
-                .Writer.ShouldBeOfType<FormatterWriter<Address, JsonFormatter>>();
+                .Writer.ShouldBeOfType<FormatterWriter<Address>>();
 
         }
 
@@ -74,7 +66,7 @@ namespace FubuMVC.Tests.NewConneg
         {
             theInputBehavior.Media.ElementAt(1)
                .ShouldBeOfType<Media<Address>>()
-               .Writer.ShouldBeOfType<FormatterWriter<Address, XmlFormatter>>();
+               .Writer.ShouldBeOfType<FormatterWriter<Address>>();
 
         }
 
@@ -93,7 +85,7 @@ namespace FubuMVC.Tests.NewConneg
 
     public class SomeConditional : IConditional
     {
-        public bool ShouldExecute()
+        public bool ShouldExecute(IFubuRequestContext context)
         {
             return true;
         }
@@ -101,7 +93,7 @@ namespace FubuMVC.Tests.NewConneg
 
     public class FancyWriter<T> : IMediaWriter<T>
     {
-        public void Write(string mimeType, T resource)
+        public void Write(string mimeType, IFubuRequestContext context, T resource)
         {
             throw new NotImplementedException();
         }
@@ -114,7 +106,7 @@ namespace FubuMVC.Tests.NewConneg
 
     public class FakeAddressWriter : IMediaWriter<Address>
     {
-        public void Write(string mimeType, Address resource)
+        public void Write(string mimeType, IFubuRequestContext context, Address resource)
         {
             throw new NotImplementedException();
         }

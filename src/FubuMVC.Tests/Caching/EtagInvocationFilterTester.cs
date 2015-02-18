@@ -30,7 +30,7 @@ namespace FubuMVC.Tests.Caching
 
         private void setRequestIfNoneMatch(string etag)
         {
-            var request = theServiceArguments.Get<ICurrentHttpRequest>();
+            var request = theServiceArguments.Get<IHttpRequest>();
             request
                                .Stub(x => x.HasHeader(HttpRequestHeader.IfNoneMatch))
                                .Return(true);
@@ -52,9 +52,9 @@ namespace FubuMVC.Tests.Caching
 
             theServiceArguments.Set(typeof(IRequestData), requestData);
 
-            stash<IHttpWriter>();
+            stash<IHttpResponse>();
             stash<ICurrentChain>();
-            stash<ICurrentHttpRequest>();
+            stash<IHttpRequest>();
 
             theCache = new HeadersCache();
 
@@ -83,7 +83,7 @@ namespace FubuMVC.Tests.Caching
 
             theFilter.Filter(theServiceArguments).ShouldEqual(DoNext.Stop);
 
-            theServiceArguments.Get<IHttpWriter>()
+            theServiceArguments.Get<IHttpResponse>()
                 .AssertWasCalled(x => x.WriteResponseCode(HttpStatusCode.NotModified));
         }
 
@@ -96,7 +96,7 @@ namespace FubuMVC.Tests.Caching
 
             theFilter.Filter(theServiceArguments).ShouldEqual(DoNext.Stop);
 
-            var writer = theServiceArguments.Get<IHttpWriter>();
+            var writer = theServiceArguments.Get<IHttpResponse>();
 
             writer.AssertWasCalled(x => x.AppendHeader("a", "1"));
             writer.AssertWasCalled(x => x.AppendHeader("b", "2"));
@@ -112,7 +112,7 @@ namespace FubuMVC.Tests.Caching
 
             theFilter.Filter(theServiceArguments).ShouldEqual(DoNext.Continue);
 
-            theServiceArguments.Get<IHttpWriter>()
+            theServiceArguments.Get<IHttpResponse>()
                 .AssertWasNotCalled(x => x.WriteResponseCode(HttpStatusCode.NotModified));
         }
     }

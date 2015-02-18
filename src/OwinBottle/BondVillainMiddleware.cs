@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using FubuMVC.OwinHost;
+using FubuMVC.Core.Http.Owin;
+using FubuMVC.Core.Http.Owin.Middleware;
 
 namespace OwinBottle
 {
-    public class BondVillainMiddleware
+    public class BondVillainMiddleware : IOwinMiddleware
     {
         private readonly Func<IDictionary<string, object>, Task> _inner;
 
@@ -16,7 +17,7 @@ namespace OwinBottle
 
         public Task Invoke(IDictionary<string, object> environment)
         {
-            var writer = new OwinHttpWriter(environment);
+            var writer = new OwinHttpResponse(environment);
             writer.AppendHeader("Slow-Moving", "Laser");
 
             return _inner(environment);

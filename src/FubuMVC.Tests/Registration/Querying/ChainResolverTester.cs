@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using FubuCore;
 using FubuCore.Reflection;
-using FubuMVC.Core;
 using FubuMVC.Core.Registration;
+using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.Querying;
 using FubuMVC.Core.Urls;
 using FubuTestingSupport;
@@ -15,7 +17,7 @@ namespace FubuMVC.Tests.Registration.Querying
     {
         #region Setup/Teardown
 
-        [SetUp]
+        [TestFixtureSetUp]
         public void SetUp()
         {
             graph = BehaviorGraph.BuildFrom(x =>
@@ -27,6 +29,19 @@ namespace FubuMVC.Tests.Registration.Querying
             typeResolver.AddStrategy<ProxyDetector>();
 
             _resolutionCache = new ChainResolutionCache(typeResolver, graph);
+        }
+
+        [SetUp]
+        public void CleanUp()
+        {
+            graph.Behaviors.OfType<RoutedChain>().Each(x => {
+                x.UrlCategory.Category = null;
+                x.UrlCategory.Creates.Clear();
+            });
+
+            _resolutionCache.ClearAll();
+
+            graph.Forwarders.Clear();
         }
 
         #endregion
@@ -64,10 +79,13 @@ namespace FubuMVC.Tests.Registration.Querying
         [Test]
         public void find_by_input_model_and_category_fails_when_there_are_multiple_matching_chains()
         {
-            graph.BehaviorFor<ChainResolverController>(x => x.M2(null))
+            var routedChain = graph.BehaviorFor<ChainResolverController>(x => x.M2(null))
+                .As<RoutedChain>();
+            routedChain
                 .UrlCategory.Category = Categories.NEW;
 
             graph.BehaviorFor<ChainResolverController>(x => x.M3(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.NEW;
 
             Exception<FubuException>.ShouldBeThrownBy(
@@ -87,9 +105,11 @@ namespace FubuMVC.Tests.Registration.Querying
         public void find_by_input_model_and_category_success()
         {
             graph.BehaviorFor<ChainResolverController>(x => x.M2(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.NEW;
 
             graph.BehaviorFor<ChainResolverController>(x => x.M3(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.EDIT;
 
             _resolutionCache.FindUnique(new ChainResolverInput1(), Categories.NEW).FirstCall().Method.Name.ShouldEqual(
@@ -118,8 +138,8 @@ namespace FubuMVC.Tests.Registration.Querying
         public void find_creator_positive()
         {
             var chain = graph.BehaviorFor<ChainResolverController>(x => x.M6(null));
-            chain.UrlCategory.Creates.Add(typeof (Entity1));
-            chain.UrlCategory.Creates.Add(typeof (Entity2));
+            chain.As<RoutedChain>().UrlCategory.Creates.Add(typeof(Entity1));
+            chain.As<RoutedChain>().UrlCategory.Creates.Add(typeof(Entity2));
 
             _resolutionCache.FindCreatorOf(typeof (Entity1)).FirstCall().Method.Name.ShouldEqual("M6");
             _resolutionCache.FindCreatorOf(typeof (Entity2)).FirstCall().Method.Name.ShouldEqual("M6");
@@ -158,6 +178,7 @@ namespace FubuMVC.Tests.Registration.Querying
         public void find_unique_can_revert_to_using_the_DEFAULT_category_if_it_exists()
         {
             graph.BehaviorFor<ChainResolverController>(x => x.M3(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.DEFAULT;
 
             _resolutionCache.FindUnique(new ChainResolverInput1()).FirstCall().Method.Name.ShouldEqual("M3");
@@ -167,9 +188,11 @@ namespace FubuMVC.Tests.Registration.Querying
         public void find_unique_can_succeed_with_multiple_options_if_all_but_one_are_categorized()
         {
             graph.BehaviorFor<ChainResolverController>(x => x.M2(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.NEW;
 
             graph.BehaviorFor<ChainResolverController>(x => x.M3(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.EDIT;
 
             _resolutionCache.FindUnique(new ChainResolverInput1()).FirstCall().Method.Name.ShouldEqual("M4");
@@ -206,6 +229,7 @@ namespace FubuMVC.Tests.Registration.Querying
         public void find_unique_with_category_respects_the_type_resolution()
         {
             graph.BehaviorFor<ChainResolverController>(x => x.M2(null))
+                .As<RoutedChain>()
                 .UrlCategory.Category = Categories.NEW;
 
             _resolutionCache.FindUnique(new Proxy<ChainResolverInput1>(), Categories.NEW)

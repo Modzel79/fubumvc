@@ -8,17 +8,10 @@ namespace FubuMVC.Core.Resources.Conneg
 {
     public class ModelBindingReader<T> : IReader<T>, DescribesItself where T : class
     {
-        private readonly IFubuRequest _request;
-
-        public ModelBindingReader(IFubuRequest request)
+        public T Read(string mimeType, IFubuRequestContext context)
         {
-            _request = request;
-        }
-
-        public T Read(string mimeType)
-        {
-            _request.Clear(typeof(T));
-            return _request.Get<T>();
+            context.Models.Clear(typeof(T));
+            return context.Models.Get<T>();
         }
 
         public IEnumerable<string> Mimetypes
@@ -33,6 +26,15 @@ namespace FubuMVC.Core.Resources.Conneg
         public void Describe(Description description)
         {
             description.Title = "Read {0} by model binding against the request data".ToFormat(typeof (T).Name);
+            description.ShortDescription = "Read {0} by model binding against the request data".ToFormat(typeof(T).Name);
+        }
+
+        public Type ModelType
+        {
+            get
+            {
+                return typeof (T);
+            }
         }
     }
 }

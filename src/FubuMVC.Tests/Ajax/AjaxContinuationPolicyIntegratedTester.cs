@@ -6,6 +6,7 @@ using FubuMVC.Core.Ajax;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Resources.Conneg;
+using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Runtime.Formatters;
 using FubuTestingSupport;
 using NUnit.Framework;
@@ -66,48 +67,34 @@ namespace FubuMVC.Tests.Ajax
         {
         }
 
-        [Test]
-        public void no_behavior_on_actions_that_do_not_return_continuations()
-        {
-            chainFor(x => x.NoContinuation(null))
-                .Output.OfType<Writer>().Any().ShouldBeFalse();
-        }
 
         [Test]
         public void should_be_a_behavior_on_actions_that_return_a_subclass_of_AjaxContinuation()
         {
-            chainFor(x => x.SpecialContinuation(null))
-                .Output.Writers.OfType<Writer>()
-                .Single()
-                .WriterType.ShouldEqual(typeof(AjaxContinuationWriter<MySpecialContinuation>));
+            var outputNode = chainFor(x => x.SpecialContinuation(null))
+                .Output;
+
+
+            outputNode.Media().OfType<Media<MySpecialContinuation>>()
+                .Any(x => x.Writer is AjaxContinuationWriter<MySpecialContinuation>)
+                .ShouldBeTrue();
         }
 
         [Test]
         public void should_be_a_behavior_on_actions_that_return_the_AjaxContinuation()
         {
-            chainFor(x => x.BasicContinuation(null)).Output.Writers.OfType<Writer>().Single()
-                .WriterType.ShouldEqual(typeof (AjaxContinuationWriter<AjaxContinuation>));
+            chainFor(x => x.BasicContinuation(null)).Output.Media().OfType<Media<AjaxContinuation>>()
+                .Any(x => x.Writer is AjaxContinuationWriter<AjaxContinuation>)
+                .ShouldBeTrue();
         }
 
         [Test]
         public void should_have_a_conneg_input_node_with_json_or_http_post_input()
         {
             var connegInput = chainFor(x => x.BasicContinuation(null)).Input;
-            connegInput.AllowHttpFormPosts.ShouldBeTrue();
-            connegInput.UsesFormatter<JsonFormatter>().ShouldBeTrue();
+            connegInput.CanRead(MimeType.HttpFormMimetype).ShouldBeTrue();
+            connegInput.CanRead(MimeType.Json).ShouldBeTrue();
         }
 
-        [Test]
-        public void should_only_apply_behavior_once()
-        {
-            var hostRegistry = new FubuRegistry();
-            var packageRegistry = new FubuPackageRegistry();
-            packageRegistry.Actions.IncludeType<Controller1>();
-            hostRegistry.Import(packageRegistry, string.Empty);
-            theGraph = BehaviorGraph.BuildFrom(hostRegistry);
-
-            var chain = chainFor(x => x.BasicContinuation(null))
-                .Output.Writers.OfType<Writer>().ShouldHaveCount(1);
-        }
     }
 }

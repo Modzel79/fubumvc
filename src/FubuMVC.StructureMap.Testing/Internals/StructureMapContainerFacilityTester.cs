@@ -7,6 +7,7 @@ using FubuMVC.Core.Behaviors;
 using FubuMVC.Core.Bootstrapping;
 using FubuMVC.Core.Caching;
 using FubuMVC.Core.Http;
+using FubuMVC.Core.Http.Owin;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Runtime;
@@ -28,13 +29,9 @@ namespace FubuMVC.StructureMap.Testing.Internals
             container = new Container(x =>
             {
                 x.For<IFileSystem>().Use<FileSystem>();
-                x.For<IStreamingData>().Use(MockRepository.GenerateMock<IStreamingData>());
-                x.For<IHttpWriter>().Use(new NulloHttpWriter());
+                x.For<IHttpResponse>().Use(new OwinHttpResponse());
                 x.For<ICurrentChain>().Use(new CurrentChain(null, null));
-                x.For<ICurrentHttpRequest>().Use(new StandInCurrentHttpRequest(){
-                   
-                    ApplicationRoot = "http://server"
-                });
+                x.For<IHttpRequest>().Use(OwinHttpRequest.ForTesting());
 
                 x.For<IResourceHash>().Use(MockRepository.GenerateMock<IResourceHash>());
             });
@@ -42,16 +39,17 @@ namespace FubuMVC.StructureMap.Testing.Internals
             container.Configure(x => x.For<IContainerFacility>().Use<StructureMapContainerFacility>());
 
 
-            graph = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Route("/area/sub/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
+            graph = BehaviorGraph.BuildFrom(x => {
+                x.Actions.IncludeType<TestController>();
 
-                x.Route("/area/sub2/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("/area/sub3/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
+//                x.Route("/area/sub/{Name}/{Age}")
+//                    .Calls<TestController>(c => c.AnotherAction(null));
+//
+//                x.Route("/area/sub2/{Name}/{Age}")
+//                    .Calls<TestController>(c => c.AnotherAction(null));
+//
+//                x.Route("/area/sub3/{Name}/{Age}")
+//                    .Calls<TestController>(c => c.AnotherAction(null));
 
                 x.Models.ConvertUsing<ExampleConverter>().ConvertUsing<ExampleConverter2>();
 
@@ -64,7 +62,7 @@ namespace FubuMVC.StructureMap.Testing.Internals
             facility = new StructureMapContainerFacility(container);
             graph.As<IRegisterable>().Register(facility.Register);
 
-            factory = facility.BuildFactory();
+            factory = facility.BuildFactory(graph);
         }
 
         #endregion
@@ -125,7 +123,7 @@ namespace FubuMVC.StructureMap.Testing.Internals
                 Value = registry
             });
 
-            myFacility.BuildFactory();
+            myFacility.BuildFactory(new BehaviorGraph());
 
             myContainer.GetInstance<ITypeResolver>().ShouldBeTheSameAs(registry);
         }
@@ -148,7 +146,7 @@ namespace FubuMVC.StructureMap.Testing.Internals
         [Test]
         public void should_be_able_to_pull_all_of_the_route_behaviors_out_of_the_container()
         {
-            container.GetAllInstances<IActionBehavior>().Count.ShouldEqual(3);
+            container.GetAllInstances<IActionBehavior>().Count().ShouldBeGreaterThan(3);
         }
 
         [Test]
@@ -165,5 +163,59 @@ namespace FubuMVC.StructureMap.Testing.Internals
             container.GetAllInstances<IModelBinder>().Any(x => x is StandardModelBinder).ShouldBeFalse();
         }
 
+        [Test]
+        public void build_by_explicit_arguments()
+        {
+            var hulk = new TheHulk();
+            var thor = new Thor();
+
+            var args = new ServiceArguments().With(hulk).With(thor);
+            var thing = facility.Build<ContainerThing>(args);
+
+            thing.Hulk.ShouldBeTheSameAs(hulk);
+            thing.Thor.ShouldBeTheSameAs(thor);
+        }
+
     }
+
+    public class ContainerThing
+    {
+        private readonly SpiderMan _spiderMan;
+        private readonly IronMan _ironMan;
+        private readonly TheHulk _hulk;
+        private readonly Thor _thor;
+
+        public ContainerThing(SpiderMan spiderMan, IronMan ironMan, TheHulk hulk, Thor thor)
+        {
+            _spiderMan = spiderMan;
+            _ironMan = ironMan;
+            _hulk = hulk;
+            _thor = thor;
+        }
+
+        public SpiderMan SpiderMan
+        {
+            get { return _spiderMan; }
+        }
+
+        public IronMan IronMan
+        {
+            get { return _ironMan; }
+        }
+
+        public TheHulk Hulk
+        {
+            get { return _hulk; }
+        }
+
+        public Thor Thor
+        {
+            get { return _thor; }
+        }
+    }
+
+    public class SpiderMan{}
+    public class IronMan{}
+    public class TheHulk{}
+    public class Thor{}
 }

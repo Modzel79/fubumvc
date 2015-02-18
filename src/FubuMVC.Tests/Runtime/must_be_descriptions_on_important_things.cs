@@ -11,7 +11,6 @@ using FubuMVC.Core;
 using FubuMVC.Core.Caching;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.Conventions;
-using FubuMVC.Core.Registration.Diagnostics;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Registration.Policies;
@@ -30,19 +29,6 @@ namespace FubuMVC.Tests.Runtime
     [TestFixture]
     public class must_be_descriptions_on_important_things
     {
-        [Test]
-        public void all_concrete_types_of_IChainModification_must_also_implement_IKnowMyConfigurationType()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                                                          .Where(x => x.IsConcreteTypeOf<IChainModification>())
-                                                          .Where(x => !x.Equals(typeof (LambdaChainModification)))
-                                                          .Where(x => !x.HasAttribute<ConfigurationTypeAttribute>());
-
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
 
         [Test]
         public void must_be_a_description_on_all_IChainModification_types()
@@ -51,7 +37,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IChainModification>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -63,7 +49,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IChainFilter>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }        
@@ -75,7 +61,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IActionSource>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -88,7 +74,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IConfigurationAction>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -101,7 +87,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IDependency>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -113,7 +99,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IUrlPolicy>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -127,7 +113,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<ValueConverter>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -139,7 +125,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IConverterFamily>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -154,7 +140,7 @@ namespace FubuMVC.Tests.Runtime
                     x => x.IsConcrete() && x.IsOpenGeneric() && x.GetInterfaces().Any(t => t.Name.Contains("IReader")))
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -169,7 +155,7 @@ namespace FubuMVC.Tests.Runtime
                     x.IsConcrete() && x.IsOpenGeneric() && x.GetInterfaces().Any(t => t.Name.Contains("IMediaWriter")))
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -181,22 +167,11 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IModelBinder>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
 
-        [Test]
-        public void must_be_a_description_on_all_node_events()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                .Where(x => x.IsConcreteTypeOf<NodeEvent>())
-                .Where(x => !Description.HasExplicitDescription(x));
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
 
         [Test]
         public void must_be_a_description_on_all_property_binders()
@@ -205,34 +180,11 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IPropertyBinder>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
 
-        [Test]
-        public void must_be_a_description_on_all_reader_nodes()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                .Where(x => x.IsConcreteTypeOf<ReaderNode>())
-                .Where(x => !Description.HasExplicitDescription(x));
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
-
-        [Test]
-        public void must_be_a_description_on_all_writer_nodes()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                .Where(x => x.IsConcreteTypeOf<WriterNode>())
-                .Where(x => !Description.HasExplicitDescription(x));
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
 
         [Test]
         public void must_be_some_sort_of_description_on_every_BehaviorNode()
@@ -241,7 +193,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<BehaviorNode>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -253,7 +205,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IFormatter>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -265,7 +217,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IRecordedHttpOutput>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -277,35 +229,11 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<LogRecord>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
 
-
-        [Test]
-        public void must_be_some_sort_of_description_on_every_ReaderNode_in_baseline_conneg()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                .Where(x => x.IsConcreteTypeOf<ReaderNode>())
-                .Where(x => !Description.HasExplicitDescription(x));
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
-
-        [Test]
-        public void must_be_some_sort_of_description_on_every_WriterNode_in_baseline_conneg()
-        {
-            IEnumerable<Type> types = typeof (FubuRequest).Assembly.GetExportedTypes()
-                .Where(x => x.IsConcreteTypeOf<WriterNode>())
-                .Where(x => !Description.HasExplicitDescription(x));
-
-            types.Each(x => Debug.WriteLine(x.Name));
-
-            types.Any().ShouldBeFalse();
-        }
 
         [Test]
         public void must_be_some_sort_of_description_on_every_iconverter_family()
@@ -314,7 +242,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IObjectConverterFamily>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }
@@ -326,7 +254,7 @@ namespace FubuMVC.Tests.Runtime
                 .Where(x => x.IsConcreteTypeOf<IConverterStrategy>())
                 .Where(x => !Description.HasExplicitDescription(x));
 
-            types.Each(x => Debug.WriteLine(x.Name));
+            types.Each(x => Console.WriteLine(x.Name));
 
             types.Any().ShouldBeFalse();
         }

@@ -6,18 +6,18 @@ using FubuCore;
 
 namespace FubuMVC.Core.Resources.Conneg
 {
-    public class FormatterWriter<T, TFormatter> : IMediaWriter<T>, DescribesItself where TFormatter : IFormatter
+    public class FormatterWriter<T> : IMediaWriter<T>, DescribesItself 
     {
-        private readonly TFormatter _formatter;
+        private readonly IFormatter _formatter;
 
-        public FormatterWriter(TFormatter formatter)
+        public FormatterWriter(IFormatter formatter)
         {
             _formatter = formatter;
         }
 
-        public void Write(string mimeType, T resource)
+        public void Write(string mimeType, IFubuRequestContext context, T resource)
         {
-            _formatter.Write(resource, mimeType);
+            _formatter.Write(context, resource, mimeType);
         }
 
         public IEnumerable<string> Mimetypes
@@ -28,8 +28,14 @@ namespace FubuMVC.Core.Resources.Conneg
         public void Describe(Description description)
         {
             var formatterDescription = Description.For(_formatter);
+            description.ShortDescription = null;
             description.Title = "Write with formatter '{0}'".ToFormat(formatterDescription.Title);
             description.Children["Formatter"] = formatterDescription;
+        }
+
+        public IFormatter Formatter
+        {
+            get { return _formatter; }
         }
     }
 }

@@ -4,24 +4,22 @@ using FubuMVC.Core.Runtime;
 
 namespace FubuMVC.Core.Resources.Conneg
 {
-    [Title("Write output model ToString() as text/html")]
-    public class HtmlStringWriter<T> : IMediaWriter<T>
+    public class HtmlStringWriter<T> : IMediaWriter<T>, DescribesItself
     {
-        private readonly IOutputWriter _writer;
-
-        public HtmlStringWriter(IOutputWriter writer)
+        public void Write(string mimeType, IFubuRequestContext context, T resource)
         {
-            _writer = writer;
-        }
-
-        public void Write(string mimeType, T resource)
-        {
-            _writer.WriteHtml(resource.ToString());
+            context.Writer.WriteHtml(resource.ToString());
         }
 
         public IEnumerable<string> Mimetypes
         {
             get { yield return MimeType.Html.Value; }
+        }
+
+        public void Describe(Description description)
+        {
+            description.Title = "Write output model ToString() as text/html";
+            description.ShortDescription = null;
         }
     }
 }

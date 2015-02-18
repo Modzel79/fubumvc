@@ -3,8 +3,7 @@ using FubuCore.Descriptions;
 
 namespace FubuMVC.Core.Registration
 {
-    [ConfigurationType(ConfigurationType.Settings)]
-    public class SettingAlteration<T> : IConfigurationAction, DescribesItself
+    public class SettingAlteration<T> : ISettingsAlteration, DescribesItself where T : class
     {
         private readonly Action<T> _alteration;
 
@@ -18,9 +17,9 @@ namespace FubuMVC.Core.Registration
             description.Title = "Alter " + typeof (T).Name;
         }
 
-        public void Configure(BehaviorGraph graph)
+        public void Alter(SettingsCollection settings)
         {
-            graph.Settings.Alter(_alteration);
+            settings.Alter(_alteration);
         }
     }
 }

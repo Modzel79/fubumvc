@@ -39,9 +39,6 @@
     <Reference Include="FubuCore">
       <HintPath>..\packages\FubuCore\lib\FubuCore.dll</HintPath>
     </Reference>
-    <Reference Include="FubuLocalization">
-      <HintPath>..\packages\FubuLocalization\lib\FubuLocalization.dll</HintPath>
-    </Reference>
     <Reference Include="FubuTestingSupport">
       <HintPath>..\packages\FubuTestingSupport\lib\FubuTestingSupport.dll</HintPath>
     </Reference>
@@ -51,20 +48,17 @@
     <Reference Include="nunit.framework">
       <HintPath>..\packages\NUnit\lib\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="nunit.mocks">
-      <HintPath>..\packages\NUnit\lib\nunit.mocks.dll</HintPath>
-    </Reference>
-    <Reference Include="pnunit.framework">
-      <HintPath>..\packages\NUnit\lib\pnunit.framework.dll</HintPath>
-    </Reference>
     <Reference Include="Rhino.Mocks">
       <HintPath>..\packages\RhinoMocks\lib\net\Rhino.Mocks.dll</HintPath>
     </Reference>
     <Reference Include="StructureMap">
-      <HintPath>..\packages\structuremap\lib\StructureMap.dll</HintPath>
+      <HintPath>..\packages\structuremap\lib\net40\StructureMap.dll</HintPath>
     </Reference>
     <Reference Include="StructureMap.AutoMocking">
-      <HintPath>..\packages\structuremap.automocking\lib\StructureMap.AutoMocking.dll</HintPath>
+      <HintPath>..\packages\structuremap.automocking\lib\net40\StructureMap.AutoMocking.dll</HintPath>
+    </Reference>
+    <Reference Include="StructureMap.Net4">
+      <HintPath>..\packages\structuremap\lib\net40\StructureMap.Net4.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
@@ -89,10 +83,10 @@
     <Compile Include="AjaxExtensionsTester.cs" />
     <Compile Include="Ajax\AjaxContinuationPolicyIntegratedTester.cs" />
     <Compile Include="Ajax\AjaxContinuationTester.cs" />
-    <Compile Include="Ajax\AjaxContinuationWriterTester.cs" />
     <Compile Include="ApplicationSettingsTester.cs" />
-    <Compile Include="AutoImport_of_configuration_actions_and_extensions_Tester.cs" />
-    <Compile Include="BehaviorGraph_logging_integration_tester.cs" />
+    <Compile Include="Assets\AssetSettingsTester.cs" />
+    <Compile Include="Assets\JavascriptRouterTester.cs" />
+    <Compile Include="Assets\ScriptTagTester.cs" />
     <Compile Include="Behaviors\Chrome\ChromeAttributeTester.cs" />
     <Compile Include="Behaviors\Chrome\ChromeNodeTester.cs" />
     <Compile Include="Bugs\DoubleRegistrationOfImports.cs" />
@@ -107,11 +101,11 @@
     <Compile Include="Caching\ResourceHashTester.cs" />
     <Compile Include="Caching\VaryByResourceTester.cs" />
     <Compile Include="Caching\VaryByThreadCultureTester.cs" />
-    <Compile Include="ConfigGraphTester.cs" />
     <Compile Include="ConfigurationActionSetTester.cs" />
-    <Compile Include="ConfigGraph_DetermineConfigurationType_Tester.cs" />
     <Compile Include="deactivators_are_called_in_fuburuntime_dispose.cs" />
     <Compile Include="DiagnosticsSettingsTester.cs" />
+    <Compile Include="Diagnostics\DiagnosticChainTester.cs" />
+    <Compile Include="Diagnostics\FakeFubuDiagnostics.cs" />
     <Compile Include="Docs\Examples\Bootstrapping.cs" />
     <Compile Include="Docs\Examples\ConfiguringBottles.cs" />
     <Compile Include="Docs\Introduction\Overview\HomeEndpoint.cs" />
@@ -136,30 +130,58 @@
     <Compile Include="Http\Cookies\SegmentTester.cs" />
     <Compile Include="Http\CurrentHttpRequestExtensionsTester.cs" />
     <Compile Include="Http\HeaderValueSourceTester.cs" />
-    <Compile Include="Http\HttpStandInServiceRegistry_specification.cs" />
     <Compile Include="Http\Compression\ContentEncodingTester.cs" />
     <Compile Include="Http\Compression\GZipEncodingTester.cs" />
     <Compile Include="Http\Compression\HttpContentEncodersTester.cs" />
     <Compile Include="Http\Compression\HttpContentEncodingFilterTester.cs" />
-    <Compile Include="Http\StandInCurrentHttpRequestTester.cs" />
+    <Compile Include="Http\Hosting\InMemoryHostTester.cs" />
+    <Compile Include="Http\Owin\CurrentHttpRequestExtensions_integration_with_OWIN_Tester.cs" />
+    <Compile Include="Http\Owin\FormRequestReaderTester.cs" />
+    <Compile Include="Http\Owin\Middleware\MiddlewareContinuationTester.cs" />
+    <Compile Include="Http\Owin\Middleware\StaticFiles\DenyConfigRuleTester.cs" />
+    <Compile Include="Http\Owin\Middleware\StaticFiles\StaticFileMiddlewareTester.cs" />
+    <Compile Include="Http\Owin\Middleware\StaticFiles\WriteFileContinuationTester.cs" />
+    <Compile Include="Http\Owin\Middleware\StaticFiles\WriteFileHeadContinuationTester.cs" />
+    <Compile Include="Http\Owin\Middleware\StaticFiles\WriteStatusCodeContinuationTester.cs" />
+    <Compile Include="Http\Owin\OwinHttpRequestTester.cs" />
+    <Compile Include="Http\Owin\OwinCurrentHttpRequest_ClientConnectivityTester.cs" />
+    <Compile Include="Http\Owin\OwinHttpResponseTester.cs" />
+    <Compile Include="Http\Owin\OwinSettingsTester.cs" />
+    <Compile Include="Http\Owin\OwnCurrentHttpRequestTester.cs" />
+    <Compile Include="Http\Owin\OwnHttpWriterTester.cs" />
     <Compile Include="Http\StreamExtensions.cs" />
-    <Compile Include="Logging\ExceptionReportTester.cs" />
+    <Compile Include="MockedFubuRequestContext.cs" />
+    <Compile Include="NewConneg\ReaderCollectionTester.cs" />
+    <Compile Include="Projections\ChildProjectionTester.cs" />
+    <Compile Include="Projections\child_and_enumerable_children_sourced_by_services.cs" />
+    <Compile Include="Projections\DelegatingProjectionTester.cs" />
+    <Compile Include="Projections\DictionaryMediaNodeTester.cs" />
+    <Compile Include="Projections\EnumerableProjectionIntegratedTester.cs" />
+    <Compile Include="Projections\ExternallyFormattedValueProjectorTester.cs" />
+    <Compile Include="Projections\JsonSerializerTester.cs" />
+    <Compile Include="Projections\pascal_to_camel_casing_names_policy.cs" />
+    <Compile Include="Projections\ProjectionContextTester.cs" />
+    <Compile Include="Projections\ProjectionRunnerTester.cs" />
+    <Compile Include="Projections\ProjectMyself_handling_in_an_accessor_projection.cs" />
+    <Compile Include="Projections\SelfProjectingValueProjectorTester.cs" />
+    <Compile Include="Projections\SimpleValueSource.cs" />
+    <Compile Include="Projections\Using_a_custom_value_projector.cs" />
+    <Compile Include="Projections\ValueSourceTester.cs" />
     <Compile Include="ReflectionExtensionsTester.cs" />
     <Compile Include="Registration\AccessOverridesFinderIntegratedTester.cs" />
     <Compile Include="Registration\ActionFilterTester.cs" />
-    <Compile Include="Registration\Conventions\AttachOutputPolicyTester.cs" />
+    <Compile Include="Registration\Application_settings_alteration_wins_out_over_an_import.cs" />
+    <Compile Include="Registration\Conventions\BehaviorGraphExtensions.cs" />
     <Compile Include="Registration\Conventions\CacheAttributePolicyTester.cs" />
     <Compile Include="Registration\Conventions\CachedPartialConventionTester.cs" />
     <Compile Include="Registration\Conventions\DefaultRouteConventionBasedUrlPolicyTester.cs" />
+    <Compile Include="Registration\Conventions\DefaultUrlPolicyTester.cs" />
     <Compile Include="Registration\Conventions\EndpointActionSourceTester.cs" />
-    <Compile Include="Registration\Conventions\JsonMessageInputConventionTester.cs" />
     <Compile Include="Registration\Conventions\RegisterAllSettingsTester.cs" />
     <Compile Include="Registration\Conventions\UrlPatternAttributeOnViewModelPolicyTester.cs" />
-    <Compile Include="Registration\Conventions\VaryByPolicyTester.cs" />
     <Compile Include="Registration\default_action_discovery.cs" />
-    <Compile Include="Registration\Diagnostics\ProvenanceChainTester.cs" />
     <Compile Include="Registration\FilterAttributeTester.cs" />
-    <Compile Include="Registration\Policies\AddWriterTester.cs" />
+    <Compile Include="Registration\Nodes\RoutedChainTester.cs" />
     <Compile Include="Registration\Policies\AndChainFilterTester.cs" />
     <Compile Include="Registration\Policies\HttpMethodFilterTester.cs" />
     <Compile Include="Registration\Policies\InputTypeIsTester.cs" />
@@ -172,13 +194,20 @@
     <Compile Include="Registration\Policies\IsPartialTester.cs" />
     <Compile Include="Registration\Policies\ResourceTypeImplementsTester.cs" />
     <Compile Include="Registration\Policies\ResourceTypeIsTester.cs" />
-    <Compile Include="Registration\Policy_implementation_of_IKnowMyConfigurationType.cs" />
+    <Compile Include="Registration\Querying\ChainResoluationCacheRootAt.cs" />
+    <Compile Include="Registration\Registration\FubuPackageRegistry_Importing_Mechanics_Specs.cs" />
     <Compile Include="Registration\Registration\ModelBindingServiceRegistry_specification.cs" />
     <Compile Include="Registration\SettingsCollectionTester.cs" />
     <Compile Include="Registration\SettingsCollection_creates_with_the_app_setting_provider_Tester.cs" />
+    <Compile Include="Registration\when_importing_urls.cs" />
+    <Compile Include="Resources\Conneg\ConnegGraphTester.cs" />
     <Compile Include="Resources\Conneg\ReaderChoiceTester.cs" />
+    <Compile Include="Resources\Hypermedia\LinkExpressionTester.cs" />
+    <Compile Include="Resources\Hypermedia\LinkSourceTester.cs" />
+    <Compile Include="Resources\Hypermedia\LinksSourceTester.cs" />
     <Compile Include="Resources\PathBased\RouteRankingIntegratedTester.cs" />
     <Compile Include="Runtime\AsyncCoordinatorTester.cs" />
+    <Compile Include="Runtime\Conditionals\ConditionalServiceTester.cs" />
     <Compile Include="Runtime\Files\ContentFolderTester.cs" />
     <Compile Include="Runtime\Files\FubuApplicationFilesSmokeTester.cs" />
     <Compile Include="Runtime\Files\FubuFileTester.cs" />
@@ -187,30 +216,26 @@
     <Compile Include="Runtime\RequestCompletionTester.cs" />
     <Compile Include="Runtime\SimpleSessionStateTester.cs" />
     <Compile Include="Runtime\SynchronousCoordinator.cs" />
+    <Compile Include="Security\AlwaysAllowPolicyTester.cs" />
+    <Compile Include="Security\AlwaysDenyPolicyTester.cs" />
+    <Compile Include="Security\AuthorizationByServiceTester.cs" />
+    <Compile Include="Security\AuthorizationCheckPolicyTester.cs" />
     <Compile Include="Security\SecurityServicesRegistry_specification.cs" />
+    <Compile Include="Security\SecuritySettingsTester.cs" />
     <Compile Include="SessionState\flashing_an_object.cs" />
     <Compile Include="SessionState\retrieving_an_existing_item_from_flash.cs" />
     <Compile Include="SessionState\retrieving_an_item_when_flash_is_empty.cs" />
-    <Compile Include="StubRequestHeaders.cs" />
     <Compile Include="Behaviors\AsyncContinueWithBehaviorTests.cs" />
     <Compile Include="Behaviors\BasicBehaviorTester.cs" />
     <Compile Include="Behaviors\Conditional\AlwaysTester.cs" />
-    <Compile Include="Behaviors\Conditional\building_conditional_behaviors_from_object_defs_testing.cs" />
-    <Compile Include="Behaviors\Conditional\ConditionalBehaviorInvokerTester.cs" />
-    <Compile Include="Behaviors\Conditional\ConditionalObjectDefTester.cs" />
-    <Compile Include="Behaviors\Conditional\ConditionalServiceTester.cs" />
-    <Compile Include="Behaviors\Conditional\when_condition_is_false.cs" />
-    <Compile Include="Behaviors\Conditional\when_condition_is_true.cs" />
     <Compile Include="Behaviors\InterceptExceptionBehaviorTester.cs" />
     <Compile Include="Behaviors\ITargetController.cs" />
     <Compile Include="Behaviors\RenderStatusCodeBehaviorTester.cs" />
     <Compile Include="Caching\OuputCachingNodeTester.cs" />
     <Compile Include="Caching\OutputCachingBehaviorTester.cs" />
     <Compile Include="can_find_and_load_bottles_with_the_FubuModule_attribute.cs" />
-    <Compile Include="ConnegAttributeTester.cs" />
     <Compile Include="FakeHttpContext.cs" />
     <Compile Include="FubuApplicationTester.cs" />
-    <Compile Include="FubuModeTester.cs" />
     <Compile Include="Http\AspNet\AspNetCurrentHttpRequestTester.cs" />
     <Compile Include="Http\AspNet\AspNetModelBindingTester.cs" />
     <Compile Include="Http\AspNet\AspNetServiceArgumentsTester.cs" />
@@ -223,43 +248,29 @@
     <Compile Include="Http\Headers\HttpHeaderValuesTester.cs" />
     <Compile Include="Http\HttpRequestHeadersTester.cs" />
     <Compile Include="Http\MimeTypeListTester.cs" />
-    <Compile Include="Http\RequestHeadersIntegratedTester.cs" />
     <Compile Include="Http\RouteDataValuesTester.cs" />
     <Compile Include="NewConneg\FormatterWriterTester.cs" />
     <Compile Include="NewConneg\FormatterReaderTester.cs" />
     <Compile Include="NewConneg\InputNodeTester.cs" />
     <Compile Include="NewConneg\InputOutputNodePlacementIntegrationTester.cs" />
     <Compile Include="NewConneg\OutputNodeIntegratedTester.cs" />
-    <Compile Include="NewConneg\ReaderTester.cs" />
-    <Compile Include="NewConneg\WriteWithFormatterTester.cs" />
     <Compile Include="NewConneg\InputBehaviorTester.cs" />
-    <Compile Include="NewConneg\mimetype_information_must_be_exposed_on_readers_writers_and_formatters.cs" />
-    <Compile Include="NewConneg\ReadWithFormatterTester.cs" />
     <Compile Include="NewConneg\ModelBindingReaderTester.cs" />
-    <Compile Include="NewConneg\ModelBindTester.cs" />
     <Compile Include="NewConneg\StringWriterTester.cs" />
-    <Compile Include="NewConneg\WriteHtmlTester.cs" />
     <Compile Include="NewConneg\HtmlStringWriterTester.cs" />
     <Compile Include="NewConneg\MediaTester.cs" />
     <Compile Include="NewConneg\OutputBehaviorTester.cs" />
     <Compile Include="NewConneg\OutputNodeTester.cs" />
-    <Compile Include="NewConneg\WriterNodeTester.cs" />
-    <Compile Include="NewConneg\WriterTester.cs" />
-    <Compile Include="NewConneg\WriteStringTester.cs" />
     <Compile Include="Packaging\ContentOnlyPackageInfoTester.cs" />
     <Compile Include="Packaging\FileSystemVirtualPathProviderTester.cs" />
     <Compile Include="Registration\ActionMethodFilterTester.cs" />
     <Compile Include="Registration\Conventions\actions_that_return_IDictionary_are_json.cs" />
     <Compile Include="Registration\Conventions\AsyncContinueWithHandlerConventionTester.cs" />
     <Compile Include="Registration\Conventions\DefaultConnegOutputIsAppliedToAnyEndpointWithoutAnyPriorOutputTester.cs" />
-    <Compile Include="Registration\Conventions\JsonAttributeTesting.cs" />
-    <Compile Include="Registration\Conventions\MediaExpressionAndConnegAttachmentPolicyTester.cs" />
     <Compile Include="Registration\Conventions\PartialOnlyConventionTester.cs" />
-    <Compile Include="Registration\Diagnostics\BehaviorNodeTracingMechanicsTester.cs" />
     <Compile Include="Registration\Nodes\ActionCallBaseObjectDefCreationTester.cs" />
     <Compile Include="Registration\Querying\ChainSearchTester.cs" />
     <Compile Include="Registration\ServiceGraphTester.cs" />
-    <Compile Include="Resources\Conneg\BehaviorChainConnegExtensionsTester.cs" />
     <Compile Include="Resources\Conneg\Conneg_Services_Registration_Tester.cs" />
     <Compile Include="Resources\Etags\ModelBindingETaggedRequestTester.cs" />
     <Compile Include="Runtime\Formatters\XmlFormatterTester.cs" />
@@ -267,7 +278,6 @@
     <Compile Include="FubuRegistryImportingTester.cs" />
     <Compile Include="Packaging\PackageManifestReaderIntegratedTester.cs" />
     <Compile Include="Packaging\ZipFilePackageLoaderTester.cs" />
-    <Compile Include="Runtime\Formatters\JsonFormatterTester.cs" />
     <Compile Include="Resources\PathBased\ResourcePathBinderTester.cs" />
     <Compile Include="Resources\PathBased\ResourcePathIntegratedUrlCreationTester.cs" />
     <Compile Include="Registration\attaching_behaviors_to_action_calls.cs" />
@@ -292,7 +302,6 @@
     <Compile Include="Registration\RouteInputTester.cs" />
     <Compile Include="Registration\Scanning\AssemblyScannerTester.cs" />
     <Compile Include="Registration\system_policy_for_authorization.cs" />
-    <Compile Include="Registration\TypePoolTester.cs" />
     <Compile Include="Routing\StandardRoutePolicyTester.cs" />
     <Compile Include="Runtime\AspNetPassthroughConverterTester.cs" />
     <Compile Include="Runtime\BasicSessionTester.cs" />
@@ -308,37 +317,80 @@
     <Compile Include="Security\AuthorizationBehaviorTester.cs" />
     <Compile Include="Security\AuthorizationNodeTester.cs" />
     <Compile Include="Security\AuthorizationRightTester.cs" />
-    <Compile Include="Security\AuthorizationPreviewServiceIntegratedTester.cs" />
     <Compile Include="Security\DefaultAuthorizationFailureHandlerTester.cs" />
-    <Compile Include="Continuations\GenericAuthorizationPolicyTester.cs" />
-    <Compile Include="Security\EndPointAuthorizorTester.cs" />
     <Compile Include="Security\PrincipalRolesTester.cs" />
     <Compile Include="Security\AuthorizationPolicyExecutorTester.cs" />
     <Compile Include="TagAttributeTester.cs" />
+    <Compile Include="UI\Address.cs" />
+    <Compile Include="UI\AuthorizationOnPageExtensionsTester.cs" />
+    <Compile Include="UI\AuthorizedLinkExpressionsTester.cs" />
+    <Compile Include="UI\Bootstrap\Tags\DetailTableBuilderTester.cs" />
+    <Compile Include="UI\configuring_conventions_by_profile.cs" />
+    <Compile Include="UI\DefaultHtmlConventionTester.cs" />
+    <Compile Include="UI\Elements\AccessorDefTester.cs" />
+    <Compile Include="UI\Elements\AccessorOverrideElementBuilderPolicyTester.cs" />
+    <Compile Include="UI\Elements\AddressClasses.cs" />
+    <Compile Include="UI\Elements\Builders\AddClassForAttributeModifierTester.cs" />
+    <Compile Include="UI\Elements\Builders\AddClassModifierTester.cs" />
+    <Compile Include="UI\Elements\Builders\AddNameModifierTester.cs" />
+    <Compile Include="UI\Elements\Builders\CheckboxBuilderTester.cs" />
+    <Compile Include="UI\Elements\Builders\DefaultLabelBuilderTester.cs" />
+    <Compile Include="UI\Elements\Builders\SpanDisplayBuilderTester.cs" />
+    <Compile Include="UI\Elements\Builders\TextboxBuilderTester.cs" />
+    <Compile Include="UI\Elements\DefaultElementNamingConventionTester.cs" />
+    <Compile Include="UI\Elements\DotNotationNamingConventionTester.cs" />
+    <Compile Include="UI\Elements\ElementGeneratorTester.cs" />
+    <Compile Include="UI\Elements\ElementIdActivatorTester.cs" />
+    <Compile Include="UI\Elements\ElementRequestActivatorTester.cs" />
+    <Compile Include="UI\Elements\ElementRequestTester.cs" />
+    <Compile Include="UI\Elements\ElementTagOverrideTester.cs" />
+    <Compile Include="UI\Extensions\ContentExtensionGraphTester.cs" />
+    <Compile Include="UI\Extensions\ExtensionsExpressionTester.cs" />
+    <Compile Include="UI\Extensions\ExtensionShelfTester.cs" />
+    <Compile Include="UI\Extensions\FilteredContentExtensionTester.cs" />
+    <Compile Include="UI\Forms\DefinitionListFieldChromeTester.cs" />
+    <Compile Include="UI\Forms\FormForExpressionTester.cs" />
+    <Compile Include="UI\Forms\FormLineExpressionTester.cs" />
+    <Compile Include="UI\Forms\FormRequestTester.cs" />
+    <Compile Include="UI\Forms\FormTagBuilderTester.cs" />
+    <Compile Include="UI\Forms\FubuPageExtensionsTester.cs" />
+    <Compile Include="UI\FubuPageExtensionsTester.cs" />
+    <Compile Include="UI\HtmlConventionRegistryTester.cs" />
+    <Compile Include="UI\HtmlElementConventionsContext.cs" />
+    <Compile Include="UI\HtmlTagExtensionsTester.cs" />
+    <Compile Include="UI\inline_definition_of_conditional_modifications_and_builders.cs" />
+    <Compile Include="UI\inline_definition_of_element_actions_with_always_condition.cs" />
+    <Compile Include="UI\inline_definition_of_html_conventions_using_attributes.cs" />
     <Compile Include="UI\PartialInvokerTester.cs" />
+    <Compile Include="UI\Properties\AssemblyInfo.cs" />
+    <Compile Include="UI\Scenarios\HtmlElementScenarioTester.cs" />
+    <Compile Include="UI\Security\AccessRightTester.cs" />
+    <Compile Include="UI\Security\DegradingAccessElementBuilderIntegrationTester.cs" />
+    <Compile Include="UI\Security\DegradingAccessElementBuilderTester.cs" />
+    <Compile Include="UI\Security\FieldAccessRightsTester.cs" />
+    <Compile Include="UI\Security\FieldAccessServiceIntegratedTester.cs" />
+    <Compile Include="UI\ServiceLocatorTagRequestActivatorTester.cs" />
+    <Compile Include="UI\Templates\TemplateWriterTester.cs" />
+    <Compile Include="UI\templates_html_creation_specs.cs" />
+    <Compile Include="UI\UIServiceRegistry_registration_spec.cs" />
     <Compile Include="UrlAliasAttributeTester.cs" />
     <Compile Include="UrlExtensionsTester.cs" />
     <Compile Include="Behaviors\ActionInvokersTester.cs" />
     <Compile Include="Behaviors\DownloadFileBehaviorTester.cs" />
-    <Compile Include="Runtime\JsonWriterTester.cs" />
     <Compile Include="Behaviors\BehaviorTestContext.cs" />
     <Compile Include="Continuations\ContinuationHandlerTester.cs" />
     <Compile Include="Continuations\FubuContinuationTester.cs" />
     <Compile Include="FubuBootstrapperIntegrationTester.cs" />
     <Compile Include="FubuRegistryTester.cs" />
     <Compile Include="HtmlGenerationTestExtensions.cs" />
-    <Compile Include="Registration\BehaviorGraphTester.cs"></Compile>
+    <Compile Include="Registration\BehaviorGraphTester.cs">
+    </Compile>
     <Compile Include="Registration\Conventions\ActionSourceTester.cs" />
     <Compile Include="Registration\Conventions\ContinuationHandlerConventionTester.cs" />
-    <Compile Include="Registration\Conventions\DefaultRouteInputTypeBasedUrlPolicyTester.cs" />
     <Compile Include="Registration\Conventions\CustomConventionIntegratedTester.cs" />
-    <Compile Include="Registration\Conventions\DefaultRouteMethodBasedUrlPolicyTester.cs" />
     <Compile Include="Registration\Conventions\DownloadFileConventionIntegratedTester.cs" />
     <Compile Include="Registration\Conventions\HtmlTagAndDocumentHandlerConventionTester.cs" />
-    <Compile Include="Registration\Conventions\IInputTypeRouteInputsModelTester.cs" />
     <Compile Include="Registration\Conventions\OutputIntegratedAttachmentTester.cs" />
-    <Compile Include="Registration\Conventions\RouteConstraintPolicyTester.cs" />
-    <Compile Include="Registration\Conventions\RouteDefinitionResolverTester.cs" />
     <Compile Include="Registration\Conventions\TypeScanningIntegratedTester.cs" />
     <Compile Include="Registration\CoreServiceRegistry_specification.cs" />
     <Compile Include="Registration\Expressions\ModelExpressionTester.cs" />
@@ -353,27 +405,45 @@
     <Compile Include="Registration\WrapperTester.cs" />
     <Compile Include="Registration\ObjectDefTester.cs" />
     <Compile Include="Registration\RouteDefinitionTester.cs" />
-    <Compile Include="Runtime\InMemoryStreamingData.cs" />
     <Compile Include="Runtime\FubuRequestTester.cs" />
     <Compile Include="Runtime\PartialFactoryTester.cs" />
     <Compile Include="SessionState\FlashProviderTester.cs" />
     <Compile Include="SessionState\RequestDataProviderTester.cs" />
     <Compile Include="TestController.cs" />
+    <Compile Include="UrlPatternAttributeTester.cs" />
     <Compile Include="UrlStringExtensionsTester.cs" />
     <Compile Include="Urls\BasicUrlRegistrationScanningIntegrationTester.cs" />
     <Compile Include="Urls\ChainUrlResolverTester.cs" />
-    <Compile Include="Urls\StubCurrentHttpRequest.cs" />
     <Compile Include="Urls\UrlRegistryIntegrationTester.cs" />
+    <Compile Include="View\Attachment\DefaultProfileTester.cs" />
+    <Compile Include="View\Attachment\ProfileViewTokenTester.cs" />
+    <Compile Include="View\Attachment\ViewAttacherTester.cs" />
+    <Compile Include="View\Attachment\ViewExclusionTester.cs" />
+    <Compile Include="View\Attachment\ViewTokenExtensionsTester.cs" />
+    <Compile Include="View\AutoImportModelNamespacesConventionTester.cs" />
+    <Compile Include="View\CommonViewNamespaces_is_registered.cs" />
+    <Compile Include="View\Default_ViewAttachment_Filters_Convention_Tester.cs" />
+    <Compile Include="View\FakeViews\Folder1\A.aspx.cs">
+      <DependentUpon>A.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="View\FakeViews\Folder1\ViewModel3.aspx.cs">
+      <DependentUpon>ViewModel3.aspx</DependentUpon>
+      <SubType>ASPXCodeBehind</SubType>
+    </Compile>
+    <Compile Include="View\FakeViews\ModelsAndControllers.cs" />
+    <Compile Include="View\must_be_a_description_on_imporant_things.cs" />
+    <Compile Include="View\OutputNodeExtensionsTester.cs" />
+    <Compile Include="View\Registration\GenericParserTester.cs" />
+    <Compile Include="View\SimplePage.cs" />
+    <Compile Include="View\ViewEngineSettingsTester.cs" />
+    <Compile Include="View\ViewsForActionFiltersTester.cs" />
     <Compile Include="Web\Security\WebAuthenticationContextTester.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AssemblyPackage\AssemblyPackage.csproj">
       <Project>{99DBA82A-E811-4DA0-983C-12E8317F8642}</Project>
       <Name>AssemblyPackage</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\AutoImportTarget\AutoImportTarget.csproj">
-      <Project>{C63B4F81-360C-4218-96DF-CCB25F2071DB}</Project>
-      <Name>AutoImportTarget</Name>
     </ProjectReference>
     <ProjectReference Include="..\FubuMVC.StructureMap\FubuMVC.StructureMap.csproj">
       <Project>{ABFEA520-820C-4B77-9015-6A09E24252FA}</Project>
@@ -389,6 +459,12 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Content Include="public\1.0.1\d.js" />
+    <Content Include="public\1.0.1\e.js" />
+    <Content Include="public\1.0.1\f.js" />
+    <Content Include="public\javascript\a.js" />
+    <Content Include="public\javascript\b.js" />
+    <Content Include="public\javascript\c.js" />
     <Content Include="Runtime\Files\Data\a.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
@@ -401,6 +477,8 @@
     <Content Include="Runtime\Files\Data\d.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <Content Include="View\FakeViews\Folder1\A.aspx" />
+    <Content Include="View\FakeViews\Folder1\ViewModel3.aspx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="FubuMVC.Tests.dll.config">
@@ -413,6 +491,8 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Results\" />
+    <Folder Include="View\FakeViews\Folder1\Folder2\Folder3\" />
+    <Folder Include="View\Model\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

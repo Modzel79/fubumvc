@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net;
 using FubuCore;
@@ -16,7 +17,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="httpMethods"></param>
         /// <returns></returns>
-        public static bool HttpMethodMatchesAny(this ICurrentHttpRequest request, params string[] httpMethods)
+        public static bool HttpMethodMatchesAny(this IHttpRequest request, params string[] httpMethods)
         {
             return httpMethods.Any(x => x.EqualsIgnoreCase(request.HttpMethod()));
         }
@@ -27,7 +28,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="httpMethods"></param>
         /// <returns></returns>
-        public static bool IsNotHttpMethod(this ICurrentHttpRequest request, params string[] httpMethods)
+        public static bool IsNotHttpMethod(this IHttpRequest request, params string[] httpMethods)
         {
             return !request.HttpMethodMatchesAny(httpMethods);
         }
@@ -38,7 +39,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static bool HasHeader(this ICurrentHttpRequest request, HttpRequestHeader key)
+        public static bool HasHeader(this IHttpRequest request, HttpRequestHeader key)
         {
             return request.HasHeader(HttpRequestHeaders.HeaderNameFor(key));
         }
@@ -49,7 +50,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static IEnumerable<string> GetHeader(this ICurrentHttpRequest request, HttpRequestHeader key)
+        public static IEnumerable<string> GetHeader(this IHttpRequest request, HttpRequestHeader key)
         {
             return request.GetHeader(HttpRequestHeaders.HeaderNameFor(key));
         }
@@ -59,7 +60,7 @@ namespace FubuMVC.Core.Http
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool IsGet(this ICurrentHttpRequest request)
+        public static bool IsGet(this IHttpRequest request)
         {
             return request.HttpMethod().EqualsIgnoreCase("GET");
         }
@@ -69,7 +70,7 @@ namespace FubuMVC.Core.Http
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool IsPost(this ICurrentHttpRequest request)
+        public static bool IsPost(this IHttpRequest request)
         {
             return request.HttpMethod().EqualsIgnoreCase("POST");
         }
@@ -79,7 +80,7 @@ namespace FubuMVC.Core.Http
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool IsHead(this ICurrentHttpRequest request)
+        public static bool IsHead(this IHttpRequest request)
         {
             return request.HttpMethod().EqualsIgnoreCase("HEAD");
         }
@@ -89,7 +90,7 @@ namespace FubuMVC.Core.Http
         /// </summary>
         /// <param name="request"></param>
         /// <returns></returns>
-        public static bool IsPut(this ICurrentHttpRequest request)
+        public static bool IsPut(this IHttpRequest request)
         {
             return request.HttpMethod().EqualsIgnoreCase("PUT");
         }
@@ -100,7 +101,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="url"></param>
         /// <returns></returns>
-        public static string ToRelativeContentUrl(this ICurrentHttpRequest request, string url)
+        public static string ToRelativeContentUrl(this IHttpRequest request, string url)
         {
             var current = request.RelativeUrl().TrimStart('/');
             var contentUrl = url.TrimStart('/');
@@ -128,7 +129,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static IEnumerable<string> GetDelimitedHeaderValues(this ICurrentHttpRequest request, string key)
+        public static IEnumerable<string> GetDelimitedHeaderValues(this IHttpRequest request, string key)
         {
             return request.GetHeader(key).GetCommaSeparatedHeaderValues();
         }
@@ -139,7 +140,7 @@ namespace FubuMVC.Core.Http
         /// <param name="request"></param>
         /// <param name="key"></param>
         /// <returns></returns>
-        public static string GetSingleHeader(this ICurrentHttpRequest request, string key)
+        public static string GetSingleHeader(this IHttpRequest request, string key)
         {
             return request.GetHeader(key).FirstOrDefault();
         }
@@ -202,24 +203,24 @@ namespace FubuMVC.Core.Http
             return time.ToUniversalTime().ToString("r");
         }
 
-        public static DateTime? IfModifiedSince(this ICurrentHttpRequest request)
+        public static DateTime? IfModifiedSince(this IHttpRequest request)
         {
             return request.GetSingleHeader(HttpRequestHeaders.IfModifiedSince)
                 .TryParseHttpDate();
         }
 
-        public static DateTime? IfUnModifiedSince(this ICurrentHttpRequest request)
+        public static DateTime? IfUnModifiedSince(this IHttpRequest request)
         {
             return request.GetSingleHeader(HttpRequestHeaders.IfUnmodifiedSince)
                 .TryParseHttpDate();
         }
 
-        public static IEnumerable<string> IfMatch(this ICurrentHttpRequest request)
+        public static IEnumerable<string> IfMatch(this IHttpRequest request)
         {
             return request.GetHeader(HttpRequestHeaders.IfMatch).GetCommaSeparatedHeaderValues();
         }
 
-        public static IEnumerable<string> IfNoneMatch(this ICurrentHttpRequest request)
+        public static IEnumerable<string> IfNoneMatch(this IHttpRequest request)
         {
             return request.GetHeader(HttpRequestHeaders.IfNoneMatch).GetCommaSeparatedHeaderValues();
         }
@@ -233,133 +234,37 @@ namespace FubuMVC.Core.Http
                 : EtagMatch.No;
 
         }
-    }
 
-    public enum EtagMatch
-    {
-        Yes,
-        No,
-        None
-    }
-
-    public class CommaTokenParser
-    {
-        private readonly List<string> _tokens = new List<string>();
-        private List<char> _characters;
-        private IMode _mode;
-
-        public CommaTokenParser()
+        /// <summary>
+        /// Helper function to read the response body as a string with the default content encoding
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static string InputText(this IHttpRequest data)
         {
-            _mode = new Searching(this);
+            var reader = new StreamReader(data.Input);
+            return reader.ReadToEnd();
         }
 
-        public void Read(char c)
+        /// <summary>
+        /// Checks whether or not there is any data in the request body
+        /// </summary>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public static bool HasBodyData(this IHttpRequest data)
         {
-            _mode.Read(c);
+            return data.Input != null && data.Input.CanRead && data.Input.Length > 0;
         }
 
-        private void addChar(char c)
+        public static bool CouldBeJson(this IHttpRequest data)
         {
-            _characters.Add(c);
-        }
+            if (!data.HasBodyData()) return false;
 
-        public IEnumerable<string> Tokens
-        {
-            get
-            {
-                return _tokens;
-            }
-        }
+            var reader = new StreamReader(data.Input);
+            var firstCharacter = reader.Read();
+            data.Input.Position = 0;
 
-        private void startToken(IMode mode)
-        {
-            _mode = mode;
-            _characters = new List<char>();
-        }
-
-        private void endToken()
-        {
-            var @string = new string(_characters.ToArray());
-            _tokens.Add(@string);
-
-            _mode = new Searching(this);
-        }
-
-
-        public interface IMode
-        {
-            void Read(char c);
-        }
-
-        public class Searching : IMode
-        {
-            private readonly CommaTokenParser _parent;
-
-            public Searching(CommaTokenParser parent)
-            {
-                _parent = parent;
-            }
-
-            public void Read(char c)
-            {
-                if (c == ',') return;
-
-                if (c == '"')
-                {
-                    _parent.startToken(new InsideQuotedToken(_parent));
-                }
-                else
-                {
-                    var normalToken = new InsideNormalToken(_parent);
-                    _parent.startToken(normalToken);
-                    normalToken.Read(c);
-                }
-            }
-        }
-
-        public class InsideQuotedToken : IMode
-        {
-            private readonly CommaTokenParser _parent;
-
-            public InsideQuotedToken(CommaTokenParser parent)
-            {
-                _parent = parent;
-            }
-
-
-            public void Read(char c)
-            {
-                if (c == '"')
-                {
-                    _parent.endToken();
-                }
-                else
-                {
-                    _parent.addChar(c);
-                }
-            }
-        }
-
-        public class InsideNormalToken : IMode
-        {
-            private readonly CommaTokenParser _parent;
-
-            public InsideNormalToken(CommaTokenParser parent)
-            {
-                _parent = parent;
-            }
-
-            public void Read(char c)
-            {
-                if (c == ',')
-                {
-                    _parent.endToken();
-                }
-                else
-                {
-                    _parent.addChar(c);
-                }
-            }
+            return firstCharacter == '{';
         }
     }
 }

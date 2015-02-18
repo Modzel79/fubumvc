@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
-using System.Web;
 using FubuCore;
 
 namespace FubuMVC.Core.Http.Cookies
@@ -26,6 +25,11 @@ namespace FubuMVC.Core.Http.Cookies
         {
             var state = new CookieState(name, value);
             _states.Add(state);
+        }
+
+        public Cookie(string name, string value, string domain) : this(name, value)
+        {
+            Domain = domain;
         }
 
         public IEnumerable<CookieState> States

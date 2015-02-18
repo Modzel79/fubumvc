@@ -1,26 +1,18 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
 using System.Net;
-using System.Web.UI.WebControls;
-using Castle.Facilities.Startable;
 using FubuMVC.Core;
 using FubuMVC.Core.Behaviors;
 using FubuMVC.Core.Continuations;
+using FubuMVC.Core.Http;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Katana;
-using FubuMVC.OwinHost;
 using FubuMVC.StructureMap;
-using FubuMVC.Tests.Docs.Topics.Authorization;
 using FubuTestingSupport;
 using NUnit.Framework;
 
 namespace FubuMVC.IntegrationTesting.Samples
 {
-    
-
     public class DirectorEndpoint
     {
         // SAMPLE: continuation-usage
@@ -31,6 +23,7 @@ namespace FubuMVC.IntegrationTesting.Samples
                 ? FubuContinuation.RedirectTo(new SpecialCustomer {Id = customer.Id})
                 : FubuContinuation.RedirectTo(new NormalCustomer {Id = customer.Id});
         }
+
         // ENDSAMPLE
 
         private Customer determineCustomer()
@@ -67,43 +60,52 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void try_out_continuations()
         {
             // SAMPLE: fubucontinuation-in-action
-            using (var server = FubuApplication
-                .DefaultPolicies()
-                .StructureMap()
-                .RunEmbedded(port:PortFinder.FindPort(5500)))
+
+            // Proceed as normal through the chain
+            TestHost.Scenario(_ => {
+                _.Get.Input(new Number { Value = 1 });
+                _.ContentShouldBe("The number is 1");
+            });
+
+            // 5 is special, "jump the tracks" and execute
+            // a different chain inline
+            TestHost.Scenario(_ =>
             {
-                // Proceed as normal through the chain
-                server.Endpoints.GetByInput(new Number {Value = 1})
-                    .ReadAsText().ShouldEqual("The number is 1");
+                _.Get.Input(new Number { Value = 5 });
+                _.ContentShouldBe("Five is a special number!");
+            });
 
-                // 5 is special, "jump the tracks" and execute
-                // a different chain inline
-                server.Endpoints.GetByInput(new Number {Value = 5})
-                    .ReadAsText().ShouldEqual("Five is a special number!");
+            // You are not authorized to specify a number greater
+            // than 10
+            TestHost.Scenario(_ =>
+            {
+                _.Get.Input(new Number { Value = 11 });
+                _.StatusCodeShouldBe(HttpStatusCode.Unauthorized);
+            });
 
-                // You are not authorized to specify a number greater
-                // than 10
-                server.Endpoints.GetByInput(new Number {Value = 11})
-                    .StatusCode
-                    .ShouldEqual(HttpStatusCode.Unauthorized);
+            // Negative numbers are invalid, so we'll redirect
+            // the user to another page instead
+            TestHost.Scenario(_ =>
+            {
+                _.Get.Input(new Number { Value = -1 });
+                _.StatusCodeShouldBe(HttpStatusCode.Redirect);
+                _.Header(HttpResponseHeaders.Location).SingleValueShouldEqual("/invalid");
+            });
 
-                // Negative numbers are invalid, so we'll redirect
-                // the user to another page instead
-                server.Endpoints.GetByInput(new Number {Value = -1})
-                    .ReadAsText().ShouldEqual("The number is invalid!");
 
-                // You can also redirect or transfer by the input model
-                // to the other chain
-                server.Endpoints.GetByInput(new Number {Value = 2})
-                    .ReadAsText().ShouldEqual("The doubled number is 4");
+            TestHost.Scenario(_ => {
+                _.Get.Input(new Number { Value = 2 });
+                _.ContentShouldBe("The doubled number is 4");
+            });
 
-                server.Endpoints.GetByInput(new Number { Value = 4 })
-                    .ReadAsText().ShouldEqual("The doubled number is 8");
-            }
+            TestHost.Scenario(_ => {
+                _.Get.Input(new Number { Value = 4 });
+                _.StatusCodeShouldBe(HttpStatusCode.Redirect);
+                _.Header(HttpResponseHeaders.Location).SingleValueShouldEqual("/doubled/8");
+            });
             // ENDSAMPLE
-        }         
+        }
     }
-
 
 
     // SAMPLE: NumberFilter
@@ -134,6 +136,7 @@ namespace FubuMVC.IntegrationTesting.Samples
             return FubuContinuation.NextBehavior();
         }
     }
+
     // ENDSAMPLE
 
     // SAMPLE: filter-testing
@@ -144,7 +147,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void just_go_on_if_not_a_special_number()
         {
             new NumberFilter()
-                .Filter(new Number{Value = 1})
+                .Filter(new Number {Value = 1})
                 .AssertWasContinuedToNextBehavior();
         }
 
@@ -152,7 +155,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void stop_if_greater_than_10()
         {
             new NumberFilter()
-                .Filter(new Number{Value = 11})
+                .Filter(new Number {Value = 11})
                 .AssertWasEndedWithStatusCode(HttpStatusCode.Unauthorized);
         }
 
@@ -160,7 +163,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void redirect_if_a_negative_number()
         {
             new NumberFilter()
-                .Filter(new Number{Value = -1})
+                .Filter(new Number {Value = -1})
                 .AssertWasRedirectedTo<NumberEndpoint>(x => x.get_invalid());
         }
 
@@ -168,7 +171,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void transfer_to_special_if_5()
         {
             new NumberFilter()
-                .Filter(new Number{Value = 5})
+                .Filter(new Number {Value = 5})
                 .AssertWasTransferedTo<NumberEndpoint>(x => x.get_special());
         }
 
@@ -176,24 +179,25 @@ namespace FubuMVC.IntegrationTesting.Samples
         public void transfer_if_2()
         {
             new NumberFilter()
-                .Filter(new Number{Value = 2})
-                .AssertWasTransferedTo(new DoubleNumber{Value = 4});
+                .Filter(new Number {Value = 2})
+                .AssertWasTransferedTo(new DoubleNumber {Value = 4});
         }
 
         [Test]
         public void redirect_if_4()
         {
             new NumberFilter()
-                .Filter(new Number { Value = 4 })
-                .AssertWasRedirectedTo(new DoubleNumber { Value = 8 });
+                .Filter(new Number {Value = 4})
+                .AssertWasRedirectedTo(new DoubleNumber {Value = 8});
         }
     }
+
     // ENDSAMPLE
 
     // SAMPLE: NumberEndpoint
     public class NumberEndpoint
     {
-        [Filter(typeof(NumberFilter))]
+        [Filter(typeof (NumberFilter))]
         public string get_number_Value(Number number)
         {
             return "The number is " + number.Value;
@@ -244,11 +248,14 @@ namespace FubuMVC.IntegrationTesting.Samples
             return Value;
         }
     }
+
     // ENDSAMPLE
 
 
     // SAMPLE: redirectable
-    public class RedirectingNumber : Number{}
+    public class RedirectingNumber : Number
+    {
+    }
 
     public class RedirectableEndpoint
     {
@@ -257,8 +264,8 @@ namespace FubuMVC.IntegrationTesting.Samples
             return new RedirectableNumber
             {
                 Number = number.Value,
-                RedirectTo = number.Value < 0 
-                    ? FubuContinuation.TransferTo<NumberEndpoint>(x => x.get_invalid()) 
+                RedirectTo = number.Value < 0
+                    ? FubuContinuation.TransferTo<NumberEndpoint>(x => x.get_invalid())
                     : null
             };
         }
@@ -269,6 +276,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public int Number { get; set; }
         public FubuContinuation RedirectTo { get; set; }
     }
+
     // ENDSAMPLE
 
     // SAMPLE: offline-filter
@@ -304,6 +312,7 @@ namespace FubuMVC.IntegrationTesting.Samples
             return "We're offline for maintenance for some reason";
         }
     }
+
     // ENDSAMPLE
 
     // SAMPLE: offline-filter-policy
@@ -313,9 +322,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         {
             Where.RespondsToHttpMethod("GET");
 
-            ModifyBy(chain => {
-                chain.InsertFirst(ActionFilter.For<OfflineFilter>(x => x.Filter()));    
-            });
+            ModifyBy(chain => { chain.InsertFirst(ActionFilter.For<OfflineFilter>(x => x.Filter())); });
         }
     }
 
@@ -325,9 +332,10 @@ namespace FubuMVC.IntegrationTesting.Samples
     {
         public MyOfflineFubuRegistry()
         {
-            Policies.Add<OfflineFilterPolicy>();
+            Policies.Local.Add<OfflineFilterPolicy>();
         }
     }
+
     // ENDSAMPLE
 
 
@@ -350,6 +358,7 @@ namespace FubuMVC.IntegrationTesting.Samples
             return new Transaction();
         }
     }
+
     // ENDSAMPLE
 
     public class Transaction : IDisposable
@@ -361,8 +370,6 @@ namespace FubuMVC.IntegrationTesting.Samples
 
         public void Commit()
         {
-            
         }
     }
-
 }

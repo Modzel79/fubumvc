@@ -3,7 +3,6 @@ using System.Diagnostics;
 using System.Linq;
 using FubuCore;
 using FubuMVC.Core.Registration;
-using FubuMVC.Core.Registration.Diagnostics;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Registration.Routes;
@@ -101,12 +100,6 @@ namespace FubuMVC.Tests.Registration.Nodes
 
         #endregion
 
-        [Test]
-        public void starts_with_the_ChainCreated_event()
-        {
-            var chain = new BehaviorChain();
-            chain.As<ITracedModel>().StagedEvents.Single().ShouldBeOfType<Created>();
-        }
 
         [Test]
         public void adding_a_node_to_the_end_sets_the_chain_on_the_node()
@@ -119,37 +112,16 @@ namespace FubuMVC.Tests.Registration.Nodes
             wrapper.ParentChain().ShouldBeTheSameAs(chain);
         }
 
-        [Test]
-        public void adding_a_route_adds_a_RouteDefined_event()
-        {
-            var chain = new BehaviorChain();
-            var route = new RouteDefinition("something");
-
-            chain.Route = route;
-
-            chain.As<ITracedModel>().StagedEvents.Last().ShouldEqual(new RouteDetermined(route));
-        }
 
         [Test]
         public void add_a_route_alias()
         {
-            var chain = new BehaviorChain();
+            var chain = new RoutedChain("something/else");
             var alias = new RouteDefinition("something/else");
 
             chain.AddRouteAlias(alias);
 
             chain.AdditionalRoutes.ShouldHaveTheSameElementsAs(alias);
-        }
-
-        [Test]
-        public void adding_a_route_alias_adds_a_RouteAliasAdded_event()
-        {
-            var chain = new BehaviorChain();
-            var alias = new RouteDefinition("something/else");
-
-            chain.AddRouteAlias(alias);
-
-            chain.As<ITracedModel>().StagedEvents.Last().ShouldEqual(new RouteAliasAdded(alias));
         }
 
         [Test]
@@ -268,7 +240,7 @@ namespace FubuMVC.Tests.Registration.Nodes
 
             chain.HasReaders().ShouldBeFalse();
 
-            chain.Input.AddFormatter<JsonFormatter>();
+            chain.Input.Add(new JsonSerializer());
 
             chain.HasReaders().ShouldBeTrue();
         }
@@ -288,7 +260,7 @@ namespace FubuMVC.Tests.Registration.Nodes
 
             chain.HasOutput().ShouldBeFalse();
 
-            chain.Output.AddFormatter<JsonFormatter>();
+            chain.Output.Add(new JsonSerializer());
 
             chain.HasOutput().ShouldBeTrue();
         }
@@ -450,56 +422,6 @@ namespace FubuMVC.Tests.Registration.Nodes
         }
 
 
-        [Test]
-        public void should_not_register_an_endpoint_authorizor_if_there_are_no_authorization_roles()
-        {
-            var chain = new BehaviorChain();
-            chain.AddToEnd(ActionCall.For<OneController>(x => x.Query(null)));
-            //chain.Authorization.AddRole("Role 1");
-
-            var container = new Container();
-            var facility = new StructureMapContainerFacility(container);
-
-            chain.As<IRegisterable>().Register(facility.Register);
-
-            facility.BuildFactory();
-
-            Debug.WriteLine(chain.UniqueId);
-            Debug.WriteLine(container.WhatDoIHave());
-
-            container.GetInstance<IEndPointAuthorizor>(chain.UniqueId.ToString())
-                .ShouldBeOfType<NulloEndPointAuthorizor>();
-        }
-
-        [Test]
-        public void should_register_an_endpoint_authorizor_if_there_are_any_authorization_rules()
-        {
-            var chain = new BehaviorChain();
-            chain.AddToEnd(ActionCall.For<OneController>(x => x.Query(null)));
-            chain.Authorization.AddRole("Role 1");
-            chain.Prepend(chain.Authorization);
-
-            var container = new Container();
-            var facility = new StructureMapContainerFacility(container);
-
-            chain.As<IRegisterable>().Register(facility.Register);
-
-            facility.BuildFactory();
-
-            container.GetInstance<IEndPointAuthorizor>(chain.UniqueId.ToString())
-                .ShouldNotBeNull().ShouldBeOfType<EndPointAuthorizor>();
-        }
-
-        [Test]
-        public void adding_a_filter_logs()
-        {
-            var filter = MockRepository.GenerateMock<IBehaviorInvocationFilter>();
-
-            var chain = new BehaviorChain();
-            chain.AddFilter(filter);
-
-            chain.As<ITracedModel>().StagedEvents.OfType<FilterAdded>().Single().ShouldEqual(new FilterAdded(filter));
-        }
     }
 
     [TestFixture]
@@ -510,12 +432,12 @@ namespace FubuMVC.Tests.Registration.Nodes
         [SetUp]
         public void SetUp()
         {
-            theChain = new BehaviorChain();
+            theChain = new RoutedChain("something");
         }
 
         #endregion
 
-        private BehaviorChain theChain;
+        private RoutedChain theChain;
 
         [Test]
         public void negative_on_category()
@@ -537,7 +459,6 @@ namespace FubuMVC.Tests.Registration.Nodes
         public void postive_on_http_verb()
         {
             theChain.UrlCategory.Category = "something";
-            theChain.Route = new RouteDefinition("something");
             theChain.Route.AllowedHttpMethods.Add("POST");
             theChain.Route.AllowedHttpMethods.Add("GET");
 
@@ -600,7 +521,6 @@ namespace FubuMVC.Tests.Registration.Nodes
 
             theChain.ResourceType().ShouldEqual(typeof (int));
 
-            theChain.Output.ResourceType.ShouldEqual(typeof (int));
         }
 
         [Test]
@@ -612,7 +532,6 @@ namespace FubuMVC.Tests.Registration.Nodes
 
             theChain.ResourceType().ShouldEqual(typeof (int));
 
-            theChain.Output.ResourceType.ShouldEqual(typeof (int));
         }
 
         [Test]
@@ -644,14 +563,12 @@ namespace FubuMVC.Tests.Registration.Nodes
             theChain.ResourceType(typeof (DateTime));
 
             theChain.ResourceType().ShouldEqual(typeof (DateTime));
-            theChain.Output.ResourceType.ShouldEqual(typeof (DateTime));
 
             theChain.AddToEnd(strings);
             theChain.AddToEnd(ints);
             theChain.AddToEnd(none);
 
             theChain.ResourceType().ShouldEqual(typeof (DateTime));
-            theChain.Output.ResourceType.ShouldEqual(typeof (DateTime));
         }
     }
 
@@ -662,41 +579,6 @@ namespace FubuMVC.Tests.Registration.Nodes
         }
     }
 
-    [TestFixture]
-    public class BehaviorChain_build_for_a_single_writer_node
-    {
-        #region Setup/Teardown
-
-        [SetUp]
-        public void SetUp()
-        {
-            theWriter = new WriteHtml(typeof (HtmlTag));
-            theChain = BehaviorChain.ForWriter(theWriter);
-        }
-
-        #endregion
-
-        private WriteHtml theWriter;
-        private BehaviorChain theChain;
-
-        [Test]
-        public void should_derive_its_resource_type_from_the_writer()
-        {
-            theChain.ResourceType().ShouldEqual(typeof (HtmlTag));
-        }
-
-        [Test]
-        public void the_chain_can_still_decipher_its_input_type()
-        {
-            theChain.InputType().ShouldEqual(typeof (HtmlTag));
-        }
-
-        [Test]
-        public void the_writer_should_be_attached_to_the_output_node()
-        {
-            theChain.Output.Writers.Single().ShouldBeTheSameAs(theWriter);
-        }
-    }
 
     public class FakeInputNode : BehaviorNode, IMayHaveInputType
     {

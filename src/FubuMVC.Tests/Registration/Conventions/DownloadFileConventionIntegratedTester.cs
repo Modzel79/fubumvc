@@ -22,20 +22,13 @@ namespace FubuMVC.Tests.Registration.Conventions
             {
                 x.Actions.IncludeType<DownloadTestController>();
 
-                x.Policies.Add<DownloadFileConvention>();
+                x.Policies.Local.Add<DownloadFileConvention>();
             });
         }
 
         #endregion
 
         private BehaviorGraph graph;
-
-        [Test]
-        public void should_be_classified_as_a_policy()
-        {
-            ConfigGraph.DetermineConfigurationType(new DownloadFileConvention())
-                .ShouldEqual(ConfigurationType.Policy);
-        }
 
         [Test]
         public void should_apply_download_behavior_convention()

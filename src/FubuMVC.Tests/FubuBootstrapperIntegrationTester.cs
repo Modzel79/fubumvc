@@ -7,6 +7,7 @@ using FubuCore;
 using FubuMVC.Core;
 using FubuMVC.Core.Behaviors;
 using FubuMVC.Core.Http;
+using FubuMVC.Core.Http.Owin;
 using FubuMVC.Core.Packaging;
 using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Runtime.Handlers;
@@ -28,38 +29,15 @@ namespace FubuMVC.Tests
         public void SetUp()
         {
             registry = new FubuRegistry(x => {
-                x.Actions.FindBy(o => {
-                    o.IncludeTypes(y => false);
-                });
-
-                x.Route("area/sub/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("area/sub2/prop")
-                    .Calls<TestController>(c => c.SomeAction(null)).OutputToJson();
-
-                x.Route("area/sub2/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("area/sub2/{Name}")
-                    .Calls<TestController>(c => c.ThirdAction(null)).OutputToJson();
-
-                x.Route("area/sub3/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("area/sub4/some_pattern")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
+                x.Actions.IncludeType<TestController>();
             });
 
             
 
             container = new Container(x =>
             {
-                x.For<IStreamingData>().Use(MockRepository.GenerateMock<IStreamingData>());
                 x.For<ICurrentChain>().Use(new CurrentChain(null, null));
-                x.For<ICurrentHttpRequest>().Use(new StubCurrentHttpRequest{
-                    TheApplicationRoot = "http://server"
-                });
+                x.For<IHttpRequest>().Use(OwinHttpRequest.ForTesting());
             });
 
             FubuMvcPackageFacility.PhysicalRootPath = AppDomain.CurrentDomain.BaseDirectory;
@@ -95,7 +73,7 @@ namespace FubuMVC.Tests
         [Test]
         public void should_have_registered_behaviors_in_the_container()
         {
-            (container.GetAllInstances<IActionBehavior>().Count >= 6).ShouldBeTrue();
+            (container.GetAllInstances<IActionBehavior>().Count() >= 6).ShouldBeTrue();
         }
 
         [Test]
@@ -103,13 +81,68 @@ namespace FubuMVC.Tests
         {
             var urls = routes.OfType<Route>().Select(r => r.Url).Where(x => !x.Contains("hello"));
 
-            urls.ShouldHaveTheSameElementsAs(
+            // We're getting others in here because of the integration tests writing actionless views
+            var expected = new[]
+            {
                 "area/sub2/prop",
                 "area/sub4/some_pattern",
                 "area/sub2/{Name}",
                 "area/sub/{Name}/{Age}",
                 "area/sub2/{Name}/{Age}",
-                "area/sub3/{Name}/{Age}");
+                "area/sub3/{Name}/{Age}"
+            };
+
+            urls.Where(x => expected.Contains(x)).ShouldHaveTheSameElementsAs(
+                expected);
+        }
+
+        public class TestController
+        {
+            [UrlPattern("area/sub2/prop")]
+            public TestOutputModel Index()
+            {
+                return new TestOutputModel();
+            }
+
+            [UrlPattern("area/sub/{Name}/{Age}")]
+            public TestOutputModel SomeAction(TestInputModel value)
+            {
+                return new TestOutputModel
+                {
+                    Prop1 = value.Prop1
+                };
+            }
+
+            [UrlPattern("area/sub4/some_pattern")]
+            public TestOutputModel SomeOtherAction(NotUsedModel not_used)
+            {
+                return new TestOutputModel();
+            }
+
+            [UrlPattern("area/sub2/{Name}/{Age}")]
+            public TestOutputModel2 AnotherAction(TestInputModel value)
+            {
+                return new TestOutputModel2
+                {
+                    Prop1 = value.Prop1,
+                    Name = value.Name,
+                    Age = value.Age
+                };
+            }
+
+            [UrlPattern("area/sub3/{Name}/{Age}")]
+            public TestOutputModel3 ThirdAction(TestInputModel value)
+            {
+                return new TestOutputModel3
+                {
+                    Prop1 = value.Prop1
+                };
+            }
+
+            [UrlPattern("area/sub2/{Name}")]
+            public void RedirectAction(TestInputModel value)
+            {
+            }
         }
     }
 }

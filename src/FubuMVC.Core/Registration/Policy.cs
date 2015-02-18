@@ -1,15 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
-using FubuCore;
 using FubuCore.Descriptions;
-using FubuMVC.Core.Configuration;
 using FubuMVC.Core.Http.Compression;
-using FubuMVC.Core.Registration.Conventions;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.Policies;
-using FubuCore.Reflection;
 
 namespace FubuMVC.Core.Registration
 {
@@ -17,7 +12,7 @@ namespace FubuMVC.Core.Registration
     /// Class used to define BehaviorChain policies and conventions
     /// </summary>
     [CanBeMultiples]
-    public class Policy : IConfigurationAction, DescribesItself, IKnowMyConfigurationType
+    public class Policy : IConfigurationAction, DescribesItself
     {
         private readonly IList<IChainModification> _actions = new List<IChainModification>();
         private readonly IList<IChainFilter> _wheres = new List<IChainFilter>();
@@ -27,7 +22,8 @@ namespace FubuMVC.Core.Registration
         /// </summary>
         public ChainPredicate Where
         {
-            get { 
+            get
+            {
                 var predicate = new ChainPredicate();
                 _wheres.Add(predicate);
 
@@ -35,7 +31,6 @@ namespace FubuMVC.Core.Registration
             }
         }
 
-        
 
         void IConfigurationAction.Configure(BehaviorGraph graph)
         {
@@ -49,10 +44,7 @@ namespace FubuMVC.Core.Registration
         /// </summary>
         public AddToEndExpression Add
         {
-            get
-            {
-                return new AddToEndExpression(this);
-            }
+            get { return new AddToEndExpression(this); }
         }
 
         /// <summary>
@@ -60,10 +52,7 @@ namespace FubuMVC.Core.Registration
         /// </summary>
         public WrapWithExpression Wrap
         {
-            get
-            {
-                return new WrapWithExpression(this);
-            }
+            get { return new WrapWithExpression(this); }
         }
 
         /// <summary>
@@ -73,17 +62,6 @@ namespace FubuMVC.Core.Registration
         public void ModifyWith<T>() where T : IChainModification, new()
         {
             _actions.Add(new T());
-        }
-
-        /// <summary>
-        /// Configure content negotiation and media readers and writers for behavior chains matching this policy
-        /// </summary>
-        public ConnegExpression Conneg
-        {
-            get
-            {
-                return new ConnegExpression(this);
-            }
         }
 
         /// <summary>
@@ -100,12 +78,11 @@ namespace FubuMVC.Core.Registration
         /// </summary>
         /// <param name="alteration"></param>
         /// <param name="description">Optional description for diagnostics</param>
-        public void ModifyBy(Action<BehaviorChain> alteration, string description = "User defined", string configurationType = ConfigurationType.Explicit)
+        public void ModifyBy(Action<BehaviorChain> alteration, string description = "User defined")
         {
             _actions.Add(new LambdaChainModification(alteration)
             {
-                Description = description,
-                ConfigurationType = configurationType
+                Description = description
             });
         }
 
@@ -120,69 +97,12 @@ namespace FubuMVC.Core.Registration
             description.AddList("Actions", _actions);
         }
 
-        string IKnowMyConfigurationType.DetermineConfigurationType()
-        {
-            if (GetType().HasAttribute<ConfigurationTypeAttribute>())
-            {
-                return GetType().GetAttribute<ConfigurationTypeAttribute>().Type;
-            }
-
-            var types = _actions.Select(DetermineConfigurationType).Distinct().ToArray();
-
-            if (types.Count() == 1)
-            {
-                return types.Single();
-            }
-
-
-            foreach (var type in BehaviorGraphBuilder.ConfigurationOrder().Reverse())
-            {
-                if (types.Contains(type)) return type;
-            }
-
-            return ConfigurationType.Policy;
-
-        }
-
         /// <summary>
         /// Apply content compression to matching chains
         /// </summary>
         public ContentCompressionActions ContentCompression
         {
-            get
-            {
-                return new ContentCompressionActions(this);
-            }
-        }
-
-        /// <summary>
-        /// Apply caching rules to matching chains
-        /// </summary>
-        public CachingExpression Caching
-        {
-            get
-            {
-                return new CachingExpression(this);
-            }
-        }
-
-
-
-        public static string DetermineConfigurationType(IChainModification modification)
-        {
-            string configurationType = null;
-
-            modification.GetType().ForAttribute<ConfigurationTypeAttribute>(att => configurationType = att.Type);
-
-            var lambda = modification as LambdaChainModification;
-            if (lambda != null)
-            {
-                configurationType = lambda.ConfigurationType;
-            }
-
-            return configurationType;
+            get { return new ContentCompressionActions(this); }
         }
     }
-
-
 }

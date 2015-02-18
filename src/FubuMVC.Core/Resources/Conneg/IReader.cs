@@ -1,10 +1,15 @@
+using System;
 using System.Collections.Generic;
 
 namespace FubuMVC.Core.Resources.Conneg
 {
-    public interface IReader<T>
+    public interface IReader
     {
         IEnumerable<string> Mimetypes { get; }
-        T Read(string mimeType);
+    }
+
+    public interface IReader<T> : IReader
+    {
+        T Read(string mimeType, IFubuRequestContext context);
     }
 }

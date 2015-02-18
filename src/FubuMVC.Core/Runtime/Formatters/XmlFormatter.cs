@@ -1,33 +1,22 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Text;
 using System.Xml;
 using System.Xml.Serialization;
 using FubuCore.Descriptions;
-using FubuMVC.Core.Http;
-using FubuMVC.Core.Resources.Conneg;
 
 namespace FubuMVC.Core.Runtime.Formatters
 {
-    // See the StoryTeller tests for conneg
-    [MimeType("text/xml", "application/xml")]
+    // See the integration tests for conneg
     [Title("Xml Serialization")]
+    [Description("Wrapper around the built in XmlSerializer")]
     public class XmlFormatter : IFormatter
     {
-        private readonly IStreamingData _streaming;
-        private readonly IOutputWriter _writer;
-
-        public XmlFormatter(IStreamingData streaming, IOutputWriter writer)
-        {
-            _streaming = streaming;
-            _writer = writer;
-        }
-
-        public void Write<T>(T target, string mimeType)
+        public void Write<T>(IFubuRequestContext context, T target, string mimeType)
         {
             var serializer = new XmlSerializer(typeof (T));
-            _writer.Write(mimeType, stream =>
-            {
+            context.Writer.Write(mimeType, stream => {
                 var xmlWriter = new XmlTextWriter(stream, Encoding.Unicode)
                 {
                     Formatting = Formatting.None
@@ -37,10 +26,10 @@ namespace FubuMVC.Core.Runtime.Formatters
             });
         }
 
-        public T Read<T>()
+        public T Read<T>(IFubuRequestContext context)
         {
             var serializer = new XmlSerializer(typeof (T));
-            var reader = new StreamReader(_streaming.Input, true);
+            var reader = new StreamReader(context.Request.Input, true);
 
             return (T) serializer.Deserialize(reader);
         }

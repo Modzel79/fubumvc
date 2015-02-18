@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FubuMVC.Core;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Resources.Conneg;
+using FubuMVC.Core.Runtime;
 using FubuMVC.Core.Runtime.Formatters;
 using FubuTestingSupport;
 using NUnit.Framework;
@@ -24,142 +26,68 @@ namespace FubuMVC.Tests.NewConneg
         public void ClearAll()
         {
             var node = new InputNode(typeof (Address));
-            node.AddFormatter<JsonFormatter>();
-            node.AllowHttpFormPosts = true;
+            node.Add(new JsonSerializer());
+            node.Add(typeof(ModelBindingReader<>));
 
             node.ClearAll();
 
-            node.Readers.Any().ShouldBeFalse();
-            node.AllowHttpFormPosts.ShouldBeFalse();
+            node.Explicits.Any().ShouldBeFalse();
         }
 
+
+
+
+
         [Test]
-        public void JsonOnly_from_scratch()
+        public void add_reader_by_formatter()
         {
             var node = new InputNode(typeof(Address));
-            node.JsonOnly();
+            var formatter = new JsonSerializer();
+            node.Add(formatter);
 
-            node.Readers.ShouldHaveCount(1);
-            node.UsesFormatter<JsonFormatter>().ShouldBeTrue();
+            node.Explicits.Single()
+                .ShouldBeOfType<FormatterReader<Address>>()
+                .Formatter.ShouldBeTheSameAs(formatter);
+
         }
 
         [Test]
-        public void JsonOnly_with_existing_stuff()
+        public void add_reader_by_type()
         {
             var node = new InputNode(typeof(Address));
-            node.AllowHttpFormPosts = true;
-            node.UsesFormatter<XmlFormatter>();
+            node.Add(typeof(GenericReader<>));
 
-            node.JsonOnly();
-
-            node.Readers.ShouldHaveCount(1);
-            node.UsesFormatter<JsonFormatter>().ShouldBeTrue();
+            node.Explicits.Single()
+                .ShouldBeOfType<GenericReader<Address>>();
         }
 
         [Test]
-        public void add_formatter()
+        public void add_reader_by_type_sad_path()
         {
-            var node = new InputNode(typeof (Address));
-            node.AllowHttpFormPosts = false;
-            
-            node.AddFormatter<JsonFormatter>();
-
-            node.Readers.Single()
-                .ShouldEqual(new ReadWithFormatter(typeof (Address), typeof (JsonFormatter)));
+            Exception<ArgumentOutOfRangeException>.ShouldBeThrownBy(() => {
+                new InputNode(typeof(Address))
+                .Add(GetType());
+            });
         }
 
         [Test]
-        public void add_formatter_is_idempotent()
+        public void add_reader_by_instance_happy_path()
         {
-            var node = new InputNode(typeof (Address));
-            node.AllowHttpFormPosts = false;
+            var node = new InputNode(typeof(InputTarget));
+            var reader = new SpecificReader();
 
-            node.AddFormatter<JsonFormatter>();
-            node.AddFormatter<JsonFormatter>();
-            node.AddFormatter<JsonFormatter>();
-            node.AddFormatter<JsonFormatter>();
-            node.AddFormatter<JsonFormatter>();
+            node.Add(reader);
 
-            node.Readers.Single()
-                .ShouldEqual(new ReadWithFormatter(typeof (Address), typeof (JsonFormatter)));
-        }
-
-
-        [Test]
-        public void add_reader_happy_path()
-        {
-            var node = new InputNode(typeof (Address));
-            node.AllowHttpFormPosts = false;
-
-            var reader = node.AddReader<FakeAddressReader>();
-
-            node.Readers.Single().ShouldBeTheSameAs(reader);
-
-            reader.InputType.ShouldEqual(typeof (Address));
-            reader.ReaderType.ShouldEqual(typeof (FakeAddressReader));
+            node.Explicits.Single().ShouldBeTheSameAs(reader);
         }
 
         [Test]
-        public void allow_http_form_post_is_idempotent()
+        public void add_reader_by_instance_sad_path()
         {
-            var inputNode = new InputNode(typeof (Address));
-            inputNode.AllowHttpFormPosts = true;
-            inputNode.AllowHttpFormPosts = true;
-            inputNode.AllowHttpFormPosts = true;
-
-            inputNode.Readers.Single().ShouldBeOfType<ModelBind>();
-        }
-
-        [Test]
-        public void allow_http_form_posts_adds_the_model_bind_reader()
-        {
-            var inputNode = new InputNode(typeof (Address));
-            inputNode.AllowHttpFormPosts = false;
-
-            inputNode.Readers.Any().ShouldBeFalse();
-
-            inputNode.AllowHttpFormPosts = true;
-
-            inputNode.Readers.Single().ShouldBeOfType<ModelBind>()
-                .InputType.ShouldEqual(typeof (Address));
-        }
-
-        [Test]
-        public void setting_allow_http_form_post_to_false_removes_the_model_binding()
-        {
-            var inputNode = new InputNode(typeof (Address));
-            inputNode.AllowHttpFormPosts = true;
-
-            inputNode.AllowHttpFormPosts = false;
-
-            inputNode.Readers.Any().ShouldBeFalse();
-        }
-
-        [Test]
-        public void should_allow_form_posts_by_default()
-        {
-            var inputNode = new InputNode(typeof (Address));
-            inputNode.AllowHttpFormPosts
-                .ShouldBeTrue();
-        }
-
-        [Test]
-        public void uses_formatter()
-        {
-            var node = new InputNode(typeof(Address));
-        
-            node.UsesFormatter<XmlFormatter>().ShouldBeFalse();
-            node.UsesFormatter<JsonFormatter>().ShouldBeFalse();
-
-            node.AddFormatter<XmlFormatter>();
-
-            node.UsesFormatter<XmlFormatter>().ShouldBeTrue();
-            node.UsesFormatter<JsonFormatter>().ShouldBeFalse();
-
-            node.AddFormatter<JsonFormatter>();
-
-            node.UsesFormatter<XmlFormatter>().ShouldBeTrue();
-            node.UsesFormatter<JsonFormatter>().ShouldBeTrue();
+            Exception<ArgumentOutOfRangeException>.ShouldBeThrownBy(() => {
+                new InputNode(typeof(Address))
+                    .Add(new SpecificReader());
+            });
         }
     }
 
@@ -168,7 +96,6 @@ namespace FubuMVC.Tests.NewConneg
     {
     }
 
-    [MimeType("text/xml", "text/json")]
     public class SpecificReader : IReader<InputTarget>
     {
         public IEnumerable<string> Mimetypes
@@ -176,7 +103,7 @@ namespace FubuMVC.Tests.NewConneg
             get { throw new NotImplementedException(); }
         }
 
-        public InputTarget Read(string mimeType)
+        public InputTarget Read(string mimeType, IFubuRequestContext context)
         {
             throw new NotImplementedException();
         }
@@ -184,6 +111,14 @@ namespace FubuMVC.Tests.NewConneg
         public void Write(string mimeType, OutputTarget resource)
         {
             throw new NotImplementedException();
+        }
+
+        public Type ModelType
+        {
+            get
+            {
+                return typeof(InputTarget);
+            }
         }
     }
 
@@ -194,7 +129,7 @@ namespace FubuMVC.Tests.NewConneg
             get { throw new NotImplementedException(); }
         }
 
-        public T Read(string mimeType)
+        public T Read(string mimeType, IFubuRequestContext context)
         {
             throw new NotImplementedException();
         }
@@ -203,11 +138,19 @@ namespace FubuMVC.Tests.NewConneg
         {
             throw new NotImplementedException();
         }
+
+        public Type ModelType
+        {
+            get
+            {
+                return typeof(T);
+            }
+        }
     }
 
     public class FancyReader<T> : IReader<T>
     {
-        public T Read(string mimeType)
+        public T Read(string mimeType, IFubuRequestContext context)
         {
             throw new NotImplementedException();
         }
@@ -215,6 +158,14 @@ namespace FubuMVC.Tests.NewConneg
         public IEnumerable<string> Mimetypes
         {
             get { yield return "fancy/Reader"; }
+        }
+
+        public Type ModelType
+        {
+            get
+            {
+                return typeof(T);
+            }
         }
     }
 
@@ -225,9 +176,17 @@ namespace FubuMVC.Tests.NewConneg
             get { yield return "fake/address"; }
         }
 
-        public Address Read(string mimeType)
+        public Address Read(string mimeType, IFubuRequestContext context)
         {
             throw new NotImplementedException();
+        }
+
+        public Type ModelType
+        {
+            get
+            {
+                return typeof(Address);
+            }
         }
     }
 }

@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using FubuMVC.Core.Registration.Nodes;
 
@@ -13,4 +12,5 @@ namespace FubuMVC.Core.Registration
     {
         IEnumerable<ActionCall> FindActions(Assembly applicationAssembly);
     }
+
 }

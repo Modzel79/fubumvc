@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Web.Caching;
 using Bottles;
 using FubuCore;
+using FubuCore.Util;
 
 namespace FubuMVC.Core.Registration
 {
@@ -14,21 +16,25 @@ namespace FubuMVC.Core.Registration
     /// </summary>
     public class TypePool
     {
+        private static readonly Lazy<TypePool> _appDomainTypes = new Lazy<TypePool>(() => {
+            var pool = new TypePool { IgnoreExportTypeFailures = true };
+            pool.AddAssemblies(AppDomain.CurrentDomain.GetAssemblies().Where(x => !x.IsDynamic));
+
+            return pool;
+        }); 
+
         /// <summary>
         /// All types in the AppDomain in non dynamic assemblies
         /// </summary>
         public static TypePool AppDomainTypes()
         {
-            var pool = new TypePool { IgnoreExportTypeFailures = true };
-            pool.AddAssemblies(AppDomain.CurrentDomain.GetAssemblies().Where(x => !x.IsDynamic));
-
-            return pool;
+            return _appDomainTypes.Value;
         }
 
         private readonly List<Assembly> _assemblies = new List<Assembly>();
         private readonly IList<Type> _types = new List<Type>();
         private bool _scanned;
-        private readonly IList<Func<IEnumerable<Assembly>>> _sources = new List<Func<IEnumerable<Assembly>>>();
+        //private readonly IList<Func<IEnumerable<Assembly>>> _sources = new List<Func<IEnumerable<Assembly>>>();
 
 
         /// <summary>
@@ -44,10 +50,10 @@ namespace FubuMVC.Core.Registration
         /// <summary>
         /// Register a function as a source of assemblies
         /// </summary>
-        public void AddSource(Func<IEnumerable<Assembly>> source)
-        {
-            _sources.Add(source);
-        }
+//        public void AddSource(Func<IEnumerable<Assembly>> source)
+//        {
+//            _sources.Add(source);
+//        }
 
         private IEnumerable<Type> types
         {
@@ -97,22 +103,6 @@ namespace FubuMVC.Core.Registration
         }
 
         /// <summary>
-        /// Adds a type to this pool if it has not already been added
-        /// </summary>
-        public void AddType(Type type)
-        {
-            _types.Fill(type);
-        }
-
-        /// <summary>
-        /// Adds a type to this pool if it has not already been added
-        /// </summary>
-        public void AddType<T>()
-        {
-            AddType(typeof (T));
-        }
-
-        /// <summary>
         /// Enumerates all assemblies provided either directly or
         /// through assembly sources (<see cref="AddSource"/>)
         /// </summary>
@@ -120,12 +110,7 @@ namespace FubuMVC.Core.Registration
         {
             get
             {
-                _assemblies.AddRange(_sources.SelectMany(x => x()));
-
-                foreach (var assembly in _assemblies.Distinct())
-                {
-                    yield return assembly;
-                }
+                return _assemblies;
             }
         }
 
@@ -187,7 +172,7 @@ namespace FubuMVC.Core.Registration
                 Assembly assembly = frame.GetMethod().DeclaringType.Assembly;
                 var name = assembly.GetName().Name;
 
-                if (name != thisAssembly && name != fubuCore && name != bottles && name != "mscorlib")
+                if (name != thisAssembly && name != fubuCore && name != bottles && name != "mscorlib" && name != "FubuMVC.Katana" && name != "Serenity")
                 {
                     callingAssembly = assembly;
                     break;

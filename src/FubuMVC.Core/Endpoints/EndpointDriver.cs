@@ -27,6 +27,7 @@ namespace FubuMVC.Core.Endpoints
     /// Primarily used to "drive" a remote or embedded FubuMVC application in testing scenarios
     /// by issuing http requests and reading the corresponding response
     /// </summary>
+    [Obsolete("Getting replaced with the Scenario support in 2.0")]
     public class EndpointDriver
     {
         private readonly IUrlRegistry _urls;
@@ -224,10 +225,10 @@ namespace FubuMVC.Core.Endpoints
         /// <param name="categoryOrHttpMethod"></param>
         /// <param name="acceptType"></param>
         /// <returns></returns>
-        public HttpResponse Get<T>(Expression<Action<T>> expression, string categoryOrHttpMethod = null, string acceptType = "*/*")
+        public HttpResponse Get<T>(Expression<Action<T>> expression, string categoryOrHttpMethod = null, string acceptType = "*/*", Action<HttpWebRequest> configure = null)
         {
             var url = _urls.UrlFor(expression, categoryOrHttpMethod).ToAbsoluteUrl(_baseUrl);
-            return Get(url, acceptType);
+            return Get(url, acceptType, configure:configure);
         }
 
         public HttpResponse GetByInput<T>(T model, string categoryOrHttpMethod = "GET", string acceptType = "*/*", Action<HttpWebRequest> configure = null, string acceptEncoding = null)

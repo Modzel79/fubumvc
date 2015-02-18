@@ -6,7 +6,10 @@ using System.Reflection;
 using System.Threading.Tasks;
 using FubuCore;
 using FubuCore.Reflection;
+using FubuMVC.Core;
 using FubuMVC.Core.Behaviors;
+using FubuMVC.Core.Registration;
+using FubuMVC.Core.Registration.Conventions;
 using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Registration.Routes;
@@ -566,6 +569,46 @@ namespace FubuMVC.Tests.Registration
         {
             theObjectDef.Type.ShouldEqual(typeof (OneInOneOutActionInvoker<ControllerTarget, Model1, Task<Model2>>));
         }
+
+        [Test]
+        public void build_chain_that_should_have_a_route()
+        {
+            var actionCall = ActionCall.For<ControllerTarget>(x => x.OneInOneOut(null));
+            var chain = actionCall.BuildChain(new UrlPolicies());
+            chain.IsPartialOnly.ShouldBeFalse();
+
+            chain.Top.ShouldBeTheSameAs(actionCall);
+        }
+
+        [Test]
+        public void build_chain_for_a_partial_suffix()
+        {
+            var actionCall = ActionCall.For<ControllerTarget>(x => x.OneInOneOutPartial(null));
+            var chain = actionCall.BuildChain(new UrlPolicies());
+            chain.IsPartialOnly.ShouldBeTrue();
+
+            chain.Top.ShouldBeTheSameAs(actionCall);
+        }
+
+        [Test]
+        public void build_chain_for_an_action_decorated_with_the_FubuPartial_attribute()
+        {
+            var actionCall = ActionCall.For<ControllerTarget>(x => x.OneInOneOutWithPartialAttribute(null));
+            var chain = actionCall.BuildChain(new UrlPolicies());
+            chain.IsPartialOnly.ShouldBeTrue();
+
+            chain.Top.ShouldBeTheSameAs(actionCall);
+        }
+
+        [Test]
+        public void applies_modify_chain_attributes_to_the_created_chain()
+        {
+            var actionCall = ActionCall.For<ControllerTarget>(x => x.get_wonky());
+            var chain = actionCall.BuildChain(new UrlPolicies());
+
+            chain.IsWrappedBy(typeof(WonkyWrapper))
+                .ShouldBeTrue();
+        }
     }
 
     public class ValidActionWithOneMethod
@@ -642,6 +685,23 @@ namespace FubuMVC.Tests.Registration
             };
         }
 
+        public Model2 OneInOneOutPartial(Model1 input)
+        {
+            return new Model2
+            {
+                Name = input.Name
+            };
+        }
+
+        [FubuPartial]
+        public Model2 OneInOneOutWithPartialAttribute(Model1 input)
+        {
+            return new Model2
+            {
+                Name = input.Name
+            };
+        }
+
         public void OneInZeroOut(Model1 input)
         {
             LastNameEntered = input.Name;
@@ -663,5 +723,24 @@ namespace FubuMVC.Tests.Registration
         public void GenericMethod<T>(List<T> list)
         {
         }
+
+        [Wonky]
+        public string get_wonky()
+        {
+            return "I'm wonky";
+        }
+    }
+
+    public class WonkyAttribute : ModifyChainAttribute
+    {
+        public override void Alter(ActionCall call)
+        {
+            call.ParentChain().InsertFirst(Wrapper.For<WonkyWrapper>());
+        }
+    }
+
+    public class WonkyWrapper : WrappingBehavior
+    {
+        
     }
 }

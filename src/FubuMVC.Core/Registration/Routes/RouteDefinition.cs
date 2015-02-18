@@ -6,13 +6,14 @@ using System.Web.Routing;
 using FubuCore;
 using FubuCore.Descriptions;
 using FubuCore.Util;
-using FubuMVC.Core.Registration.Nodes;
+using FubuMVC.Core.Resources.PathBased;
 
 namespace FubuMVC.Core.Registration.Routes
 {
-    public class RouteDefinition : TracedNode, IRouteDefinition, DescribesItself
+    public class RouteDefinition : IRouteDefinition, DescribesItself
     {
-        public static readonly IEnumerable<string> VERBS = new List<string>{
+        public static readonly IEnumerable<string> VERBS = new List<string>
+        {
             "POST",
             "GET",
             "PUT",
@@ -50,40 +51,13 @@ namespace FubuMVC.Core.Registration.Routes
 
         public void RegisterRouteCustomization(Action<Route> action)
         {
-            Trace("Route customization was registered");
             _alterations.Add(action);
         }
 
-        private SessionStateRequirement _sessionStateRequirement;
-        public SessionStateRequirement SessionStateRequirement
-        {
-            get { return _sessionStateRequirement; }
-            set
-            {
-                if (value != null)
-                {
-                    Trace("Set the SessionStateRequirement to '{0}'", value);
-                }
-                
-                _sessionStateRequirement = value;
-            }
-        }
+        public SessionStateRequirement SessionStateRequirement { get; set; }
 
-        private string _category;
+        public string Category { get; set; }
 
-        public string Category
-        {
-            get { return _category; }
-            set
-            {
-                if (value.IsNotEmpty())
-                {
-                    Trace("Set the Category to '{0}'", value);
-                }
-
-                _category = value;
-            }
-        }
 
         public virtual string CreateTemplate(object input, Func<object, object>[] hash)
         {
@@ -97,8 +71,6 @@ namespace FubuMVC.Core.Registration.Routes
             {
                 if (value != null)
                 {
-                    Trace("Added RouteInput " + value);
-
                     value.Parent = this;
                 }
 
@@ -108,6 +80,8 @@ namespace FubuMVC.Core.Registration.Routes
 
         public void ApplyInputType(Type inputType)
         {
+            if (inputType.CanBeCastTo<ResourcePath>()) return;
+
             Input = RouteBuilder.Build(inputType, Pattern).Input;
         }
 
@@ -152,8 +126,6 @@ namespace FubuMVC.Core.Registration.Routes
 
         public void Append(string patternPart)
         {
-            Trace("Appending {0} to the url pattern", patternPart);
-
             _pattern += "/" + patternPart;
             _pattern = _pattern.Replace("//", "/").TrimStart('/');
         }
@@ -165,38 +137,34 @@ namespace FubuMVC.Core.Registration.Routes
 
         public void RemoveLastPatternPart()
         {
-            Trace("Removing the last part from the url pattern");
-
             var parts = Pattern.Split('/');
             var newParts = parts.Take(parts.Length - 1).ToArray();
             _pattern = newParts.Join("/");
         }
 
-	    public virtual int Rank
-	    {
-		    get
-		    {
-			    if (Input == null)
-				    return 0;
+        public virtual int Rank
+        {
+            get
+            {
+                if (Input != null && Input.InputType != null && Input.InputType.CanBeCastTo<IRankMeLast>())
+                {
+                    return int.MaxValue;
+                }
 
-			    if (Input.InputType.CanBeCastTo<IRankMeLast>())
-			    {
-				    return int.MaxValue;
-			    }
-
-			    return Input.Rank;
-		    }
-	    }
+                return RouteBuilder.PatternRank(_pattern);
+            }
+        }
 
         public Indexer<string, IRouteConstraint> Constraints
         {
-            get { return new Indexer<string, IRouteConstraint>(x => _constraints[x], (key, v) => _constraints[key] = v); }
+            get
+            {
+                return new Indexer<string, IRouteConstraint>(x => _constraints[x], (key, v) => _constraints[key] = v);
+            }
         }
 
         public void AddHttpMethodConstraint(string method)
         {
-            Trace("Adding Http Method Constraint for " + method.ToUpper());
-
             _httpMethods.Fill(method.ToUpper());
         }
 
@@ -212,8 +180,6 @@ namespace FubuMVC.Core.Registration.Routes
 
         public void Prepend(string prefix)
         {
-            Trace("Prepending '{0}' to the url pattern", prefix);
-
             if (prefix.IsEmpty()) return;
 
             // Apparently this is necessary
@@ -259,15 +225,16 @@ namespace FubuMVC.Core.Registration.Routes
             description.Properties["Http Verbs"] = AllowedHttpMethods.Any() ? AllowedHttpMethods.Join(", ") : "Any";
 
             description.Properties["SessionStateRequirement"] = SessionStateRequirement == null
-                                                                    ? "Default"
-                                                                    : SessionStateRequirement.ToString();
+                ? "Default"
+                : SessionStateRequirement.ToString();
         }
+
 
         protected bool Equals(RouteDefinition other)
         {
-            return string.Equals(_pattern, other._pattern, StringComparison.OrdinalIgnoreCase) 
-                && _constraints.SequenceEqual(other._constraints) 
-                && GetHttpMethodConstraints().SequenceEqual(other.GetHttpMethodConstraints());
+            return string.Equals(_pattern, other._pattern, StringComparison.OrdinalIgnoreCase)
+                   && _constraints.SequenceEqual(other._constraints)
+                   && GetHttpMethodConstraints().SequenceEqual(other.GetHttpMethodConstraints());
         }
 
         public override bool Equals(object obj)
@@ -282,7 +249,7 @@ namespace FubuMVC.Core.Registration.Routes
         {
             unchecked
             {
-                int hashCode = _constraints.GetHashCode();
+                var hashCode = _constraints.GetHashCode();
                 hashCode = (hashCode*397) ^ _httpMethods.GetHashCode();
                 hashCode = (hashCode*397) ^ _pattern.GetHashCode();
                 return hashCode;

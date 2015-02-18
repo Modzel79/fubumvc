@@ -1,43 +1,56 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using Bottles;
-using FubuCore.Reflection;
-using FubuCore.Util;
+using System.Reflection;
+using System.Threading.Tasks;
+using FubuMVC.Core.Caching;
+using FubuMVC.Core.Http;
 using FubuMVC.Core.Registration;
-using FubuMVC.Core.Registration.Diagnostics;
+using FubuMVC.Core.Registration.Conventions;
+using FubuMVC.Core.Registration.Nodes;
+using FubuMVC.Core.Registration.Services;
+using FubuMVC.Core.Resources.Conneg;
+using FubuMVC.Core.Security;
+using FubuMVC.Core.UI;
 
 namespace FubuMVC.Core.Configuration
 {
+    public class PolicyGraph
+    {
+        public readonly ConfigurationActionSet Policies = new ConfigurationActionSet();
+        public readonly ConfigurationActionSet Explicits = new ConfigurationActionSet();
+        
+        public readonly ConfigurationActionSet Reordering = new ConfigurationActionSet();
+    }
+
     /// <summary>
     /// Holds and tracks all the IConfigurationAction's used to construct the BehaviorGraph of an application
     /// </summary>
     public class ConfigGraph
     {
-        private readonly Cache<string, ConfigurationActionSet> _configurations
-            = new Cache<string, ConfigurationActionSet>(x => new ConfigurationActionSet(x));
+        private readonly Assembly _applicationAssembly;
 
         private readonly IList<RegistryImport> _imports = new List<RegistryImport>();
-        private ProvenanceChain _currentProvenance = new ProvenanceChain(new Provenance[0]);
-        private readonly IList<ServiceRegistryLog> _services = new List<ServiceRegistryLog>();
+        private readonly IList<ServiceRegistry> _services = new List<ServiceRegistry>();
 
-        public ConfigGraph()
+        private readonly ActionSourceAggregator _actionSourceAggregator;
+        private readonly IList<IChainSource> _sources = new List<IChainSource>();
+
+        public readonly PolicyGraph Global = new PolicyGraph();
+        public readonly PolicyGraph Local = new PolicyGraph();
+
+        public readonly IList<ISettingsAlteration> Settings = new List<ISettingsAlteration>();
+
+        public ConfigGraph(Assembly applicationAssembly)
         {
-            _configurations[ConfigurationType.Discovery] = new ActionSourceConfigurationActionSet();
+            _applicationAssembly = applicationAssembly;
+            _actionSourceAggregator = new ActionSourceAggregator(_applicationAssembly);
+
+            _sources.Add(_actionSourceAggregator);
         }
 
-        /// <summary>
-        /// All of the ActionLog's for this application
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<ActionLog> AllLogs()
+        public Assembly ApplicationAssembly
         {
-            return _configurations.SelectMany(x => x.Logs);
-        }
-
-        public ProvenanceChain CurrentProvenance
-        {
-            get { return _currentProvenance; }
+            get { return _applicationAssembly; }
         }
 
         public IEnumerable<RegistryImport> Imports
@@ -45,63 +58,14 @@ namespace FubuMVC.Core.Configuration
             get { return _imports; }
         }
 
-        public void PrependProvenance(IEnumerable<Provenance> forebears)
-        {
-            _configurations.SelectMany(x => x.Logs).Select(x => x.ProvenanceChain).Distinct().Each(
-                x => x.Prepend(forebears));
-        }
-
-        public void RunActions(string configurationType, BehaviorGraph graph)
-        {
-            _configurations[configurationType].RunActions(graph);
-        }
-
-        public void Push(FubuRegistry registry)
-        {
-            _currentProvenance = (_currentProvenance ?? new ProvenanceChain(new Provenance[0])).Push(new FubuRegistryProvenance(registry));
-        }
-
-        public void Push(IPackageInfo bottle)
-        {
-            _currentProvenance = (_currentProvenance ?? new ProvenanceChain(new Provenance[0])).Push(new BottleProvenance(bottle));
-        }
-
-        public void Push(IFubuRegistryExtension extension)
-        {
-            _currentProvenance = (_currentProvenance ?? new ProvenanceChain(new Provenance[0])).Push(new FubuRegistryExtensionProvenance(extension));
-        }
-
-        public void Pop()
-        {
-            _currentProvenance = _currentProvenance.Pop();
-        }
-
-        public IEnumerable<ActionLog> LogsFor(string configurationType)
-        {
-            return _configurations[configurationType].Logs;
-        } 
-
-        public IEnumerable<IConfigurationAction> ActionsFor(string configurationType)
-        {
-            return _configurations[configurationType].Actions;
-        } 
-
-        public void Add(ConfigurationPack pack)
-        {
-            _currentProvenance = new ProvenanceChain(new Provenance[]{new ConfigurationPackProvenance(pack), });
-
-            pack.WriteTo(this);
-        }
-
         public void AddImport(RegistryImport import)
         {
             if (HasImported(import.Registry)) return;
 
-            import.Provenance = CurrentProvenance;
             _imports.Add(import);
         }
 
-        // Tested through the FubuRegistry.Import()
+        // Tested through the FubuRegistry.BuildLocal()
         public bool HasImported(FubuRegistry registry)
         {
             if (_imports.Any(x => x.Registry.GetType() == registry.GetType()))
@@ -119,21 +83,21 @@ namespace FubuMVC.Core.Configuration
 
         public IEnumerable<RegistryImport> UniqueImports()
         {
-            List<RegistryImport> children = allChildrenImports().ToList();
+            var children = allChildrenImports().ToList();
 
             return _imports.Where(x => !children.Contains(x));
         }
 
         private IEnumerable<RegistryImport> allChildrenImports()
         {
-            foreach (RegistryImport import in _imports)
+            foreach (var import in _imports)
             {
-                foreach (RegistryImport action in import.Registry.Config._imports)
+                foreach (var action in import.Registry.Config._imports)
                 {
                     yield return action;
 
                     foreach (
-                        RegistryImport descendentAction in
+                        var descendentAction in
                             _imports.SelectMany(x => x.Registry.Config.allChildrenImports()))
                     {
                         yield return descendentAction;
@@ -142,85 +106,124 @@ namespace FubuMVC.Core.Configuration
             }
         }
 
-        public void Add(IConfigurationAction action, string configurationType = null)
+
+        public void Add(IChainSource source)
         {
-            string type = DetermineConfigurationType(action) ?? configurationType;
-            if (type == null)
-            {
-                throw new ArgumentOutOfRangeException(
-                    "No Type specified and unable to determine what the configuration type for " +
-                    action.GetType());
-            }
-
-            _configurations[type].Fill(_currentProvenance, action); 
+            _sources.Add(source);
         }
-
-
 
         public void Add(ServiceRegistry services)
         {
-            _services.Add(new ServiceRegistryLog(services, CurrentProvenance));
+            _services.Add(services);
         }
 
         public void Add(IActionSource source)
         {
-            Add(new ActionSourceRunner(source), ConfigurationType.Discovery);
+            _actionSourceAggregator.Add(source);
         }
 
-        public void RegisterServices(ServiceGraph services)
+        public IEnumerable<ServiceRegistry> AllServiceRegistrations()
         {
-            AllServiceRegistrations().Each(x => x.Apply(services));
-        }
-
-        public IEnumerable<ServiceRegistryLog> AllServiceRegistrations()
-        {
-            foreach (RegistryImport import in UniqueImports())
+            foreach (var import in UniqueImports())
             {
-                foreach (ServiceRegistryLog log in import.Registry.Config.AllServiceRegistrations())
+                foreach (var log in import.Registry.Config.AllServiceRegistrations())
                 {
                     yield return log;
                 }
             }
 
-            foreach (ServiceRegistryLog registry in _services)
+            foreach (var registry in _services)
             {
                 yield return registry;
             }
         }
 
-        public static string DetermineConfigurationType(IConfigurationAction action)
+        public IEnumerable<IChainSource> Sources
         {
-            var knowsItself = action as IKnowMyConfigurationType;
-            if (knowsItself != null) return knowsItself.DetermineConfigurationType();
-
-            if (action.GetType().HasAttribute<ConfigurationTypeAttribute>())
-            {
-                return action.GetType().GetAttribute<ConfigurationTypeAttribute>().Type;
-            }
-
-            return null;
+            get { return _sources; }
         }
 
-        public IEnumerable<T> AllEvents<T>()
+        public void ApplyGlobalReorderings(BehaviorGraph graph)
         {
-            return _configurations.SelectMany(x => x.AllEvents<T>()).Union(_services.SelectMany(x => x.Events.OfType<T>()));
+            Global.Reordering.RunActions(graph);
+
+            GlobalReorderingRules().Each(x => x.Configure(graph));
         }
-        
-        /// <summary>
-        /// Honestly, this is 50% a HACK.  This just gives ConfigGraph a chance to apply the default endpoint action source
-        /// if the FubuRegistry doesn't already have any
-        /// </summary>
-        public void Seal()
+
+        public IEnumerable<IConfigurationAction> GlobalReorderingRules()
         {
-            var actions = _configurations[ConfigurationType.Discovery];
+            yield return new OutputBeforeAjaxContinuationPolicy();
 
-            if (!actions.Logs.Any(x => x.Action is ActionSourceRunner))
+            yield return new ReorderBehaviorsPolicy
             {
-                _currentProvenance = new ProvenanceChain(new Provenance[]{new ConfigurationPackProvenance(new DiscoveryActionsConfigurationPack()), });
-                Add(new EndpointActionSource());
-            }
+                CategoryMustBeAfter = BehaviorCategory.Authorization,
+                CategoryMustBeBefore = BehaviorCategory.Authentication
+            };
 
-            Pop();
+            yield return new ReorderBehaviorsPolicy()
+                .ThisNodeMustBeBefore<OutputCachingNode>()
+                .ThisNodeMustBeAfter<OutputNode>();
+
+        }
+
+        public void RegisterServices(BehaviorGraph graph)
+        {
+            graph.Settings.Register(graph.Services);
+
+            AllServiceRegistrations().Union(DefaultServices())
+                .OfType<IServiceRegistration>()
+                .Each(x => x.Apply(graph.Services));
+
+            graph.Services.AddService(this);
+        }
+
+        public static IEnumerable<ServiceRegistry> DefaultServices()
+        {
+            yield return new ModelBindingServicesRegistry();
+            yield return new SecurityServicesRegistry();
+            yield return new HttpStandInServiceRegistry();
+            yield return new CoreServiceRegistry();
+            yield return new CachingServiceRegistry();
+            yield return new UIServiceRegistry();
+        }
+
+        public void BuildLocal(BehaviorGraph graph)
+        {
+            // Local policies will ONLY apply to chains built by this ConfigGraph,
+            // and not to chains that are built by imports
+
+            var imports = UniqueImports().Select(x => {
+                return Task.Factory.StartNew(() => {
+                    return x.BuildChains(graph);
+                });
+            }).ToArray();
+
+            var chainSources = Sources.Select(source => {
+                return Task.Factory.StartNew(() => {
+                    return source.BuildChains(graph);
+                });
+            }).ToArray();
+
+            Task.WaitAll(chainSources);
+
+            chainSources.Each(x => graph.AddChains(x.Result));
+
+            Local.Explicits.RunActions(graph);
+            Local.Policies.RunActions(graph);
+            Local.Reordering.RunActions(graph);
+
+            Task.WaitAll(imports);
+
+            imports.Each(x => graph.AddChains(x.Result));
+
+
+        }
+
+        public void ImportGlobals(ConfigGraph config)
+        {
+            Global.Explicits.Import(config.Global.Explicits);
+            Global.Policies.Import(config.Global.Policies);
+            Global.Reordering.Import(config.Global.Reordering);
         }
     }
 }

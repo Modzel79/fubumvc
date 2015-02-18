@@ -13,15 +13,18 @@ namespace FubuMVC.Tests.NewConneg
         [Test]
         public void mime_type_is_only_text()
         {
-            ClassUnderTest.Mimetypes.Single()
-                .ShouldEqual(MimeType.Text.Value);
+            ClassUnderTest.Mimetypes
+                .ShouldHaveTheSameElementsAs(MimeType.Text.Value, MimeType.Html.Value);
         }
 
         [Test]
         public void write()
         {
-            ClassUnderTest.Write(MimeType.Text.Value, "some text");
-            MockFor<IOutputWriter>().AssertWasCalled(x => x.Write(MimeType.Text.Value, "some text"));
+            var context = new MockedFubuRequestContext();
+            ClassUnderTest.Write(MimeType.Text.Value, context, "some text");
+            context.Writer.AssertWasCalled(x => x.Write(MimeType.Text.Value, "some text"));
         }
     }
+
+    
 }

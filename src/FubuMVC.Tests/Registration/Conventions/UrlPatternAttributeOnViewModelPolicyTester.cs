@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using FubuCore;
 using FubuCore.Descriptions;
 using FubuMVC.Core;
 using FubuMVC.Core.Registration;
@@ -21,13 +22,16 @@ namespace FubuMVC.Tests.Registration.Conventions
         {
             var graph = BehaviorGraph.BuildFrom(x =>
             {
-                x.Configure(g =>
-                {
-                    g.AddChain(BehaviorChain.ForWriter(new FooWriter()));
+                x.Configure(g => {
+                    var c = new RoutedChain(new RouteDefinition("foo/{Name}"), typeof(Foo), typeof(Foo));
+                    c.AddToEnd(new OutputNode(typeof(Foo)));
+
+                    g.AddChain(c);
                 });
             });
 
-            var chain = graph.Behaviors.First(x => x.ResourceType() == typeof (Foo));
+            var chain = graph.Behaviors.First(x => x.ResourceType() == typeof (Foo))
+                .As<RoutedChain>();
             chain.Route.Pattern.ShouldEqual("foo/{Name}");
 
             chain.Route.Input.ShouldBeOfType<RouteInput<Foo>>()
@@ -41,27 +45,14 @@ namespace FubuMVC.Tests.Registration.Conventions
         public string Name { get; set; }
     }
 
-    public class FooWriter : WriterNode
+    public class FooWriter : IMediaWriter<Foo>
     {
-        public override Type ResourceType
-        {
-            get { return typeof(Foo); }
-        }
-
-        protected override ObjectDef toWriterDef()
+        public void Write(string mimeType, IFubuRequestContext context, Foo resource)
         {
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<string> Mimetypes
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        protected override void createDescription(Description description)
-        {
-            throw new NotImplementedException();
-        }
+        public IEnumerable<string> Mimetypes { get; private set; }
     }
 
 

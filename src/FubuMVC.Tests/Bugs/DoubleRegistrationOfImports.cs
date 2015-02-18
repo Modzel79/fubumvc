@@ -1,7 +1,9 @@
 using System;
 using System.Diagnostics;
+using FubuCore;
 using FubuMVC.Core;
 using FubuMVC.Core.Registration;
+using FubuMVC.Core.Registration.Nodes;
 using NUnit.Framework;
 using System.Linq;
 using FubuTestingSupport;
@@ -48,7 +50,6 @@ namespace FubuMVC.Tests.Bugs
             });
 
             var actions = graph.Actions().Where(x => x.HandlerType == typeof (SomeClassWithActions));
-            actions.Each(x => Debug.WriteLine(x.Description + " at " + x.ParentChain().GetRoutePattern()));
 
 
             actions.ShouldHaveCount(1);
@@ -65,7 +66,6 @@ namespace FubuMVC.Tests.Bugs
             });
 
             var actions = graph.Actions().Where(x => x.HandlerType == typeof(SomeClassWithActions));
-            actions.Each(x => Debug.WriteLine(x.Description + " at " + x.ParentChain().GetRoutePattern()));
 
 
             actions.ShouldHaveCount(1);
@@ -78,7 +78,7 @@ namespace FubuMVC.Tests.Bugs
 
             var graph = BehaviorGraph.BuildFrom(x =>
             {
-                x.Policies.Add<SpecialPolicy>();
+                x.Policies.Local.Add<SpecialPolicy>();
                 x.Import<OneExtension>();
                 x.Import<TwoExtension>();
                 x.Import<ThreeExtension>();
@@ -110,7 +110,8 @@ namespace FubuMVC.Tests.Bugs
     {
         public SubModule()
         {
-            Route(Guid.NewGuid().ToString()).Calls<SomeClassWithActions>(x => x.get_hello()).OutputToJson();
+            Actions.IncludeType<SomeClassWithActions>();
+            //Route(Guid.NewGuid().ToString()).Calls<SomeClassWithActions>(x => x.get_hello());
         }
     }
 
@@ -128,7 +129,7 @@ namespace FubuMVC.Tests.Bugs
 
         public void Configure(FubuRegistry registry)
         {
-            registry.Policies.Add<SpecialPolicy>();
+            registry.Policies.Local.Add<SpecialPolicy>();
             registry.Import<SubModule>();
 
             Applied++;
@@ -141,7 +142,7 @@ namespace FubuMVC.Tests.Bugs
 
         public void Configure(FubuRegistry registry)
         {
-            registry.Policies.Add<SpecialPolicy>();
+            registry.Policies.Local.Add<SpecialPolicy>();
             registry.Import<SubModule>();
             Applied++;
         }

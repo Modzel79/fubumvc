@@ -1,24 +1,41 @@
+using System.Collections.Generic;
+using System.Linq;
+using Bottles;
 using FubuCore;
 using FubuMVC.Core.Registration;
-using FubuMVC.Core.Registration.Diagnostics;
+using FubuMVC.Core.Registration.Nodes;
 
 namespace FubuMVC.Core.Configuration
 {
-    public class RegistryImport
+    public class RegistryImport : IChainSource
     {
+        private BehaviorGraph _behaviorGraph;
         public string Prefix { get; set; }
         public FubuRegistry Registry { get; set; }
-        public ProvenanceChain Provenance { get; set; }
 
-        public void ImportInto(BehaviorGraph parent, ConfigLog log)
+        public void InitializeSettings(BehaviorGraph parentGraph)
         {
-            var childGraph = BehaviorGraphBuilder.Import(Registry, parent, log);
-            parent.As<IChainImporter>().Import(childGraph, b => {
-                b.PrependToUrl(Prefix);
-                b.Origin = Registry.Name;
-            });
+            _behaviorGraph = new BehaviorGraph(parentGraph.Settings)
+            {
+                ApplicationAssembly = Registry.ApplicationAssembly
+            };
 
-            log.Import(Registry.Config, Provenance);
+            Registry.Config.Imports.Each(x => x.InitializeSettings(parentGraph));
+            
+            Registry.Config.Settings.Each(x => x.Alter(_behaviorGraph.Settings));
+        }
+
+        public IEnumerable<BehaviorChain> BuildChains(BehaviorGraph graph)
+        {
+            return PackageRegistry.Timer.Record("Building Imported Chains for " + Registry, () => {
+                Registry.Config.BuildLocal(_behaviorGraph);
+                if (Prefix.IsNotEmpty())
+                {
+                    _behaviorGraph.Behaviors.OfType<RoutedChain>().Each(x => x.Route.Prepend(Prefix));
+                }
+
+                return _behaviorGraph.Behaviors;
+            });
         }
 
         public bool Equals(RegistryImport other)
@@ -32,17 +49,19 @@ namespace FubuMVC.Core.Configuration
         {
             if (ReferenceEquals(null, obj)) return false;
             if (ReferenceEquals(this, obj)) return true;
-            if (obj.GetType() != typeof(RegistryImport)) return false;
-            return Equals((RegistryImport)obj);
+            if (obj.GetType() != typeof (RegistryImport)) return false;
+            return Equals((RegistryImport) obj);
         }
 
         public override int GetHashCode()
         {
             unchecked
             {
-                return ((Prefix != null ? Prefix.GetHashCode() : 0) * 397) ^ (Registry.GetType() != null ? Registry.GetType().GetHashCode() : 0);
+                return ((Prefix != null ? Prefix.GetHashCode() : 0)*397) ^
+                       (Registry.GetType() != null ? Registry.GetType().GetHashCode() : 0);
             }
         }
+
 
         public override string ToString()
         {

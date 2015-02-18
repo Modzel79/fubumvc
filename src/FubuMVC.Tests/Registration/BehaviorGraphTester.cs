@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using FubuCore;
 using FubuCore.Binding;
 using FubuMVC.Core;
@@ -83,80 +84,6 @@ namespace FubuMVC.Tests.Registration
         }
 
         [Test]
-        public void description_writes_each_behavior_first_call_and_route_pattern()
-        {
-            var graph = BehaviorGraph.BuildFrom(x => {
-                x.Actions.IncludeType<OneController>();
-
-                x.Policies.Add(policy => {
-                    policy.Wrap.WithBehavior<WrappingBehavior2>();
-                    policy.Wrap.WithBehavior<WrappingBehavior>();
-                });
-
-            });
-
-            var listener = MockRepository.GenerateStub<TraceListener>();
-            Trace.Listeners.Add(listener);
-            graph.Describe();
-            graph.Behaviors.Each(
-                b => listener.AssertWasCalled(
-                    l => l.WriteLine(b.FirstCall().Description.PadRight(70) + b.Route.Pattern)));
-        }
-
-        [Test]
-        public void find_home_is_not_null()
-        {
-            var graph = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Actions.IncludeClassesSuffixedWithController();
-
-                x.Routes.HomeIs<MyHomeController>(c => c.ThisIsHome());
-            });
-
-            graph.FindHomeChain().FirstCall().Method.Name.ShouldEqual("ThisIsHome");
-        }
-
-        [Test]
-        public void home_url()
-        {
-            var graph = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Actions.IncludeClassesSuffixedWithController();
-
-                x.Routes.HomeIs<MyHomeController>(c => c.ThisIsHome());
-            });
-
-            graph.FindHomeChain().GetRoutePattern().ShouldEqual("");
-        }
-
-        [Test]
-        public void home_url_keeps_the_http_constraints()
-        {
-            var graph = BehaviorGraph.BuildFrom(x => {
-                x.Actions.IncludeType<MyHomeController>();
-
-                x.Routes.HomeIs<MyHomeController>(c => c.get_home());
-            });
-
-            graph.FindHomeChain().Route.AllowedHttpMethods.Single()
-                .ShouldEqual("GET");
-        }
-
-        [Test]
-        public void home_url_keeps_the_http_constraints_by_input_model()
-        {
-            var graph = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Actions.IncludeType<MyHomeController>();
-
-                x.Routes.HomeIs<MyOtherRequestModel>();
-            });
-
-            graph.FindHomeChain().Route.AllowedHttpMethods.Single()
-                .ShouldEqual("GET");
-        }
-
-        [Test]
         public void find_home_is_not_set()
         {
             var graph = BehaviorGraph.BuildFrom(x =>
@@ -174,10 +101,9 @@ namespace FubuMVC.Tests.Registration
             {
                 x.Actions.IncludeClassesSuffixedWithController();
 
-                x.Routes.HomeIs<MyHomeController>(c => c.ThisIsHome());
             });
 
-            var chain = graph.FindHomeChain();
+            var chain = graph.BehaviorFor<MyHomeController>(x => x.ThisIsHome());
             graph.RemoveChain(chain);
 
             graph
@@ -191,6 +117,28 @@ namespace FubuMVC.Tests.Registration
             var graph = new BehaviorGraph();
             graph.Services.AddService<IRequestData, RequestData>();
             graph.Services.DefaultServiceFor<IRequestData>().Type.ShouldEqual(typeof (RequestData));
+        }
+
+        [Test]
+        public void explicit_version()
+        {
+            var graph = new BehaviorGraph();
+            graph.Version = "2.3";
+
+            graph.Version.ShouldEqual("2.3");
+        }
+
+        [Test]
+        public void derive_if_the_assembly_is_set()
+        {
+            var graph = new BehaviorGraph()
+            {
+                ApplicationAssembly = Assembly.GetExecutingAssembly()
+            };
+
+
+
+            graph.Version.ShouldEqual(Assembly.GetExecutingAssembly().GetName().Version);
         }
     }
 
@@ -293,59 +241,6 @@ namespace FubuMVC.Tests.Registration
         }
     }
 
-    [TestFixture]
-    public class when_importing_urls
-    {
-        #region Setup/Teardown
-
-        [SetUp]
-        public void SetUp()
-        {
-            graph1 = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Route("method1/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("method2/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-
-                x.Route("method3/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-            });
-
-            chain = new BehaviorChain();
-            graph1.AddChain(chain);
-
-            graph2 = BehaviorGraph.BuildFrom(x =>
-            {
-                x.Route("/root/{Name}/{Age}")
-                    .Calls<TestController>(c => c.AnotherAction(null)).OutputToJson();
-            });
-
-            graph2.As<IChainImporter>().Import(graph1, b => b.PrependToUrl("area1"));
-        }
-
-        #endregion
-
-        private BehaviorGraph graph1;
-        private BehaviorGraph graph2;
-        private BehaviorChain chain;
-
-        [Test]
-        public void should_have_all_the_routes_from_the_imported_graph()
-        {
-            graph2.Routes.Any(x => x.Pattern == "area1/method1/{Name}/{Age}").ShouldBeTrue();
-            graph2.Routes.Any(x => x.Pattern == "area1/method2/{Name}/{Age}").ShouldBeTrue();
-            graph2.Routes.Any(x => x.Pattern == "area1/method3/{Name}/{Age}").ShouldBeTrue();
-        }
-
-        [Test]
-        public void should_have_imported_the_behavior_chains_without_routes()
-        {
-            graph2.Behaviors.Contains(chain).ShouldBeTrue();
-        }
-    }
-
 
     [TestFixture]
     public class when_merging_services
@@ -364,7 +259,7 @@ namespace FubuMVC.Tests.Registration
             graph1.Services.AddService(foo1);
             graph2.Services.AddService(foo2);
 
-            graph1.As<IChainImporter>().Import(graph2, b => b.PrependToUrl(string.Empty));
+            graph1.As<IChainImporter>().Import(graph2.Behaviors);
         }
 
         #endregion
@@ -375,44 +270,6 @@ namespace FubuMVC.Tests.Registration
         private Foo foo2;
     }
 
-    [TestFixture]
-    public class when_adding_chains_by_action
-    {
-        [Test]
-        public void add_a_simple_closed_type()
-        {
-            var graph = new BehaviorGraph();
-            var chain = graph.AddActionFor("go/{Id}", typeof (Action1));
-
-            chain.FirstCall().HandlerType.ShouldEqual(typeof (Action1));
-            chain.FirstCall().Method.Name.ShouldEqual("Go");
-            chain.Route.Pattern.ShouldEqual("go/{Id}");
-            chain.Route.Input.ShouldBeOfType<RouteInput<ArgModel>>();
-
-            chain.Route.CreateUrlFromInput(new ArgModel{
-                Id = 5
-            }).ShouldEqual("go/5");
-
-            graph.Behaviors.Count().ShouldEqual(1);
-        }
-
-        [Test]
-        public void add_a_simple_open_type()
-        {
-            var graph = new BehaviorGraph();
-            var chain = graph.AddActionFor("go/{Id}", typeof (Action2<>), typeof (string));
-
-            chain.FirstCall().HandlerType.ShouldEqual(typeof (Action2<string>));
-            chain.FirstCall().Method.Name.ShouldEqual("Go");
-            chain.Route.Pattern.ShouldEqual("go/{Id}");
-            chain.Route.Input.ShouldBeOfType<RouteInput<ArgModel>>();
-            chain.Route.CreateUrlFromInput(new ArgModel{
-                Id = 5
-            }).ShouldEqual("go/5");
-
-            graph.Behaviors.Count().ShouldEqual(1);
-        }
-    }
 
     public class Action1
     {

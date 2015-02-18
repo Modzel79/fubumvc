@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using FubuCore.Descriptions;
+using FubuMVC.Core;
 using FubuMVC.Core.Caching;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.Nodes;
@@ -36,12 +37,6 @@ namespace FubuMVC.Tests.Registration.Conventions
             var graph = BehaviorGraph.BuildFrom(x =>
             {
                 x.Actions.IncludeClassesSuffixedWithController(); // Just making it not use SomeEndpoint
-
-                x.Configure(g =>
-                {
-                    var chain = BehaviorChain.ForWriter(new CachedResourceWriter());
-                    g.AddChain(chain);
-                });
             });
 
             var chain2 = graph.Behaviors.Single(x => x.ResourceType() == typeof (CachedResource));
@@ -52,27 +47,22 @@ namespace FubuMVC.Tests.Registration.Conventions
         }
     }
 
-    public class CachedResourceWriter : WriterNode
+    public class CachedResourceController
     {
-        public override Type ResourceType
+        public CachedResource get_cached_resource()
         {
-            get { return typeof (CachedResource); }
+            return new CachedResource();
         }
+    }
 
-        protected override ObjectDef toWriterDef()
+    public class CachedResourceWriter : IMediaWriter<CachedResource>
+    {
+        public void Write(string mimeType, IFubuRequestContext context, CachedResource resource)
         {
             throw new NotImplementedException();
         }
 
-        public override IEnumerable<string> Mimetypes
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        protected override void createDescription(Description description)
-        {
-            throw new NotImplementedException();
-        }
+        public IEnumerable<string> Mimetypes { get; private set; }
     }
 
     public class SomeEndpoint

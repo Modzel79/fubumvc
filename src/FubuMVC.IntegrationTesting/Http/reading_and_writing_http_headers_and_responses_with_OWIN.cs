@@ -6,7 +6,6 @@ using FubuMVC.Core;
 using FubuMVC.Core.Http;
 using FubuMVC.Core.Http.Headers;
 using FubuMVC.Core.Runtime;
-using FubuMVC.TestingHarness;
 using FubuTestingSupport;
 using NUnit.Framework;
 
@@ -44,9 +43,9 @@ namespace FubuMVC.IntegrationTesting.Http
     public class ResponseController
     {
         private readonly IOutputWriter _writer;
-        private readonly IResponse _response;
+        private readonly IHttpResponse _response;
 
-        public ResponseController(IOutputWriter writer, IResponse response)
+        public ResponseController(IOutputWriter writer, IHttpResponse response)
         {
             _writer = writer;
             _response = response;

@@ -5,6 +5,7 @@ using System.Reflection;
 using FubuCore;
 using FubuCore.Descriptions;
 using FubuCore.Reflection;
+using FubuMVC.Core.Registration.Conventions;
 using FubuMVC.Core.Registration.Routes;
 
 namespace FubuMVC.Core.Registration.Nodes
@@ -24,17 +25,6 @@ namespace FubuMVC.Core.Registration.Nodes
 
         public override BehaviorCategory Category { get { return BehaviorCategory.Call; } }
 
-
-        public void ForAttributes<T>(Action<T> action) where T : Attribute
-        {
-            HandlerType.ForAttribute(action);
-            Method.ForAttribute(action);
-        }
-
-        public bool HasAttribute<T>() where T : Attribute
-        {
-            return HandlerType.HasAttribute<T>() || Method.HasAttribute<T>();
-        }
 
         public static ActionCall For<T>(Expression<Action<T>> expression)
         {
@@ -132,5 +122,32 @@ namespace FubuMVC.Core.Registration.Nodes
                : new RouteDefinition(pattern);
         }
 
+        public BehaviorChain BuildChain(UrlPolicies urlPolicies)
+        {
+            var chain = buildChain(urlPolicies);
+
+            chain.AddToEnd(this);
+
+            ForAttributes<ModifyChainAttribute>(att => att.Alter(this));
+
+            return chain;
+        }
+
+        private BehaviorChain buildChain(UrlPolicies urlPolicies)
+        {
+            if (HasAttribute<FubuPartialAttribute>() || Method.Name.EndsWith("Partial"))
+            {
+                return new BehaviorChain
+                {
+                    IsPartialOnly = true
+                };
+            }
+            else
+            {
+                var route = urlPolicies.BuildRoute(this);
+
+                return new RoutedChain(route, InputType(), ResourceType());
+            }
+        }
     }
 }

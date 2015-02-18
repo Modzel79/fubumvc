@@ -35,20 +35,9 @@ namespace FubuMVC.IntegrationTesting.Samples
 
     }
 
-    // This attribute will NOT be necessary in FubuMVC 2.0, but is
-    // for FubuMVC 1.* to feed the configuration model
-    [MimeType("special/format", "text/json")]
+
     public class SpecialContentMediaReader : IReader<InputMessage>
     {
-        private readonly IStreamingData _streaming;
-        private readonly ICurrentHttpRequest _httpRequest;
-
-        public SpecialContentMediaReader(IStreamingData streaming, ICurrentHttpRequest httpRequest)
-        {
-            _streaming = streaming;
-            _httpRequest = httpRequest;
-        }
-
         public IEnumerable<string> Mimetypes
         {
             get
@@ -57,14 +46,15 @@ namespace FubuMVC.IntegrationTesting.Samples
             }
         }
 
-        public InputMessage Read(string mimeType)
+        public InputMessage Read(string mimeType, IFubuRequestContext context)
         {
-            // read the body of the http request from IStreamingData
+            // read the body of the http request from IHttpRequest
             // read header information and route information from
-            // ICurrentHttpRequest
+            // IHttpRequest
 
             return new InputMessage();
         }
+
     }
     // ENDSAMPLE
 
@@ -74,7 +64,6 @@ namespace FubuMVC.IntegrationTesting.Samples
         public string Color { get; set; }
     }
 
-    [MimeType("special/format", "text/json")]
     public class SpecialContentMediaWriter : IMediaWriter<SomeResource>
     {
         private readonly IOutputWriter _writer;
@@ -92,7 +81,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         // This signature is necessary because we are assuming
         // that some Writer's will be able to produce representations
         // for multiple mimetype's
-        public void Write(string mimeType, SomeResource resource)
+        public void Write(string mimeType, IFubuRequestContext context, SomeResource resource)
         {
             if (mimeType == "special/format")
             {
@@ -138,21 +127,7 @@ namespace FubuMVC.IntegrationTesting.Samples
             // filter.  
             Where.ChainMatches(chain => true);
 
-            Conneg.AcceptJson();
-
-            Conneg.AllowHttpFormPosts();
-
-            Conneg.ApplyConneg();
-
-            Conneg.AddHtml();
-
-            Conneg.AddWriter(typeof(SpecialContentMediaWriter));
-
-            Conneg.ClearAllWriters();
-
-            Conneg.MakeAsymmetricJson();
-
-            Conneg.MakeSymmetricJson();
+            // TODO -- redo this.
         }
     }
     // ENDSAMPLE
@@ -171,7 +146,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         public override void Alter(ActionCall call)
         {
             var outputNode = call.ParentChain().Output;
-            _types.Each(outputNode.AddWriter);
+            _types.Each(t => outputNode.Add(t));
         }
     }
     // ENDSAMPLE
@@ -191,9 +166,7 @@ namespace FubuMVC.IntegrationTesting.Samples
         {
             var inputNode = call.ParentChain().Input;
 
-            _types.Each(type => {
-                inputNode.Readers.AddToEnd(new Reader(type));
-            });
+            _types.Each(inputNode.Add);
         }
     }
     // ENDSAMPLE
@@ -209,58 +182,29 @@ namespace FubuMVC.IntegrationTesting.Samples
             chain.Input.ClearAll();
 
             // Accept 'application/x-www-form-urlencoded' with model binding
-            chain.Input.AllowHttpFormPosts = true;
+            chain.Input.Add(typeof(ModelBindingReader<>));
             
             // Add basic Json reading
-            chain.Input.AddFormatter<JsonFormatter>();
+            chain.Input.Add(new JsonSerializer());
 
             // Query whether or not the chain uses the basic Json reading
-            bool readsJson = chain.Input.UsesFormatter<JsonFormatter>();
+            bool readsJson = chain.Input.CanRead(MimeType.Json);
 
             // Add a completely custom Reader
-            var specialReader = chain.Input
-                .AddReader<SpecialContentMediaReader>();
+            chain.Input
+                .Add(new SpecialContentMediaReader());
 
-            // Reorder the special reader to move it to the first
-            // as the default
-            specialReader.MoveToFront();
-
-            // Add a new Reader as the last reader
-            chain.Input.Readers.AddToEnd(new ModelBind(chain.InputType()));
-            
             // Are there any Readers?
             chain.HasReaders();
 
             // Is there any output?
             chain.HasOutput();
 
-
-            // Add the default Conneg policies to this chain
-            // model binding, json, or xml in and json or xml out
-            chain.ApplyConneg();
-
-            // Manipulate an existing writer
-            var writer = chain.Output.Writers.First();
-            manipulateWriter(writer);
-
             // Remove all writers
             chain.Output.ClearAll();
 
-            // Add the HtmlStringWriter
-            chain.Output.AddHtml();
-
-            // Add basic Json output
-            chain.OutputJson();
-
-            // Add basic Xml output
-            chain.OutputXml();
         }
 
-        private static void manipulateWriter(WriterNode writer)
-        {
-            writer.ReplaceWith(new WriteString());
-            writer.MoveToFront();
-        }
 
         // ENDSAMPLE
 
@@ -268,21 +212,16 @@ namespace FubuMVC.IntegrationTesting.Samples
         // This method is just an example of how you can add 
         // runtime conditions to an existing WriterNode
         // hanging off of BehaviorChain.Output.Writers
-        private static void addConditions(WriterNode node)
-        {
-            node.Condition<MyRuntimeCondition>();
+        
 
-            node.ConditionByModel<SomeResource>(x => x.Color == "Red");
-
-            node.ConditionByService<Customer>(x => x.IsSpecial());
-        }
+        // TODO -- need to redo this
 
         // IConditional services are resolved from the IoC
         // container, so you can declare dependencies
         // in the constructor function
         public class MyRuntimeCondition : IConditional
         {
-            public bool ShouldExecute()
+            public bool ShouldExecute(IFubuRequestContext context)
             {
                 // apply your own runtime logic
                 return false;
@@ -293,7 +232,7 @@ namespace FubuMVC.IntegrationTesting.Samples
     }
 
 
-    public class JsonInput : JsonMessage
+    public class JsonInput
     {
         
     }
@@ -315,10 +254,10 @@ namespace FubuMVC.IntegrationTesting.Samples
     // The actual custom behavior
     public class CorrectMimetypeForAjaxBehavior : WrappingBehavior
     {
-        private readonly ICurrentHttpRequest _httpRequest;
+        private readonly IHttpRequest _httpRequest;
         private readonly IFubuRequest _fubuRequest;
 
-        public CorrectMimetypeForAjaxBehavior(ICurrentHttpRequest httpRequest, IFubuRequest fubuRequest)
+        public CorrectMimetypeForAjaxBehavior(IHttpRequest httpRequest, IFubuRequest fubuRequest)
         {
             _httpRequest = httpRequest;
             _fubuRequest = fubuRequest;
@@ -348,28 +287,6 @@ namespace FubuMVC.IntegrationTesting.Samples
             Where.AnyActionMatches(call => call.HandlerType.Name.Contains("Ajax"));
 
             Wrap.WithBehavior<CorrectMimetypeForAjaxBehavior>();
-        }
-    }
-    // ENDSAMPLE
-
-    // SAMPLE: conneg-add-json-to-views
-    public class AddJsonToViewsPolicy : Policy
-    {
-        public AddJsonToViewsPolicy()
-        {
-            // Assuming that you have *some* sort
-            // of restriction on when and where
-            // this policy applies
-            Where.IsNotPartial().And.RespondsToHttpMethod("GET")
-                .And.ChainMatches(chain => chain.GetRoutePattern().Contains("foo"));
-
-            // Adds Json reading and writing to
-            // the each chain that matches the Where filter
-            // above
-            ModifyBy(chain => {
-                chain.Output.AddFormatter<JsonFormatter>();
-                chain.Input.AddFormatter<JsonFormatter>();
-            });
         }
     }
     // ENDSAMPLE

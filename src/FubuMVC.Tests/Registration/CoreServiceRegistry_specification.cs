@@ -1,11 +1,15 @@
 using System.Linq;
 using FubuCore;
+using FubuCore.Binding;
 using FubuCore.Conversion;
 using FubuCore.Formatting;
 using FubuCore.Logging;
 using FubuMVC.Core;
-using FubuMVC.Core.Behaviors;
+using FubuMVC.Core.Assets;
+using FubuMVC.Core.Assets.Templates;
+using FubuMVC.Core.Continuations;
 using FubuMVC.Core.Diagnostics;
+using FubuMVC.Core.Http;
 using FubuMVC.Core.Http.Cookies;
 using FubuMVC.Core.Registration;
 using FubuMVC.Core.Registration.Querying;
@@ -22,10 +26,69 @@ namespace FubuMVC.Tests.Registration
     [TestFixture]
     public class CoreServiceRegistry_specification
     {
+        public CoreServiceRegistry_specification()
+        {
+            FubuMode.Reset();
+            _serviceGraph = BehaviorGraph.BuildEmptyGraph().Services;
+        }
+        
+
+        private readonly ServiceGraph _serviceGraph;
+
         private void registeredTypeIs<TService, TImplementation>()
         {
-            BehaviorGraph.BuildEmptyGraph().Services.DefaultServiceFor<TService>().Type.ShouldEqual(
+            _serviceGraph.DefaultServiceFor<TService>().Type.ShouldEqual(
                 typeof (TImplementation));
+        }
+
+        [Test]
+        public void continuation_processor_is_registered()
+        {
+            registeredTypeIs<IContinuationProcessor, ContinuationProcessor>();
+        }
+
+        [Test]
+        public void IConditionalService_is_registered()
+        {
+            registeredTypeIs<IConditionalService, ConditionalService>();
+        }
+
+        [Test]
+        public void IAssetTagBuilder_is_registered_in_production_mode()
+        {
+            
+
+            registeredTypeIs<IAssetTagBuilder, AssetTagBuilder>();
+        }
+
+        [Test]
+        public void IAssetTagBuilder_is_registered_in_development_mode()
+        {
+            FubuMode.SetUpForDevelopmentMode();
+
+            BehaviorGraph.BuildEmptyGraph().Services.DefaultServiceFor<IAssetTagBuilder>().Type.ShouldEqual(
+                typeof(DevelopmentModeAssetTagBuilder));
+
+        }
+
+        [Test]
+        public void IAssetFinder_is_registered_as_a_singleton()
+        {
+            registeredTypeIs<IAssetFinder, AssetFinderCache>();
+            ServiceRegistry.ShouldBeSingleton(typeof(AssetFinderCache))
+                .ShouldBeTrue();
+        }
+
+        [Test]
+        public void fubu_request_context_is_registered()
+        {
+            registeredTypeIs<IFubuRequestContext, FubuRequestContext>();
+        }
+
+        [Test]
+        public void request_data_is_registered()
+        {
+            registeredTypeIs<IRequestData, FubuMvcRequestData>();
         }
 
         [Test]
@@ -85,9 +148,10 @@ namespace FubuMVC.Tests.Registration
         }
 
         [Test]
-        public void default_json_reader_is_JavascriptDeserializer_flavor()
+        public void TemplateGraph_is_registered_as_a_singleton()
         {
-            registeredTypeIs<IJsonReader, JavaScriptJsonReader>();
+            ServiceRegistry.ShouldBeSingleton(typeof(TemplateGraph)).ShouldBeTrue();
+            registeredTypeIs<TemplateGraph, TemplateGraph>();
         }
 
         [Test]
@@ -122,7 +186,6 @@ namespace FubuMVC.Tests.Registration
         }
 
 
-
         [Test]
         public void setter_binder_is_registered()
         {
@@ -137,24 +200,17 @@ namespace FubuMVC.Tests.Registration
                 .ShouldBeTheSameAs(graph.Files);
         }
 
-
-        [Test]
-        public void the_conditional_service_is_registered()
-        {
-            registeredTypeIs<IConditionalService, ConditionalService>();
-        }
-
         [Test]
         public void url_registry_is_registered()
         {
             registeredTypeIs<IUrlRegistry, UrlRegistry>();
         }
 
-		[Test]
-		public void chain_url_resolver_is_registered()
-		{
-			registeredTypeIs<IChainUrlResolver, ChainUrlResolver>();
-		}
+        [Test]
+        public void chain_url_resolver_is_registered()
+        {
+            registeredTypeIs<IChainUrlResolver, ChainUrlResolver>();
+        }
 
         [Test]
         public void should_be_a_value_for_app_reloaded()

@@ -6,8 +6,10 @@ using FubuCore.Dates;
 using FubuCore.Logging;
 using FubuMVC.Core.Behaviors;
 using FubuMVC.Core.Http;
+using FubuMVC.Core.Http.Owin;
 using FubuMVC.Core.Registration.ObjectGraph;
 using FubuMVC.Core.Runtime;
+using FubuMVC.Core.Runtime.Formatters;
 using FubuTestingSupport;
 using NUnit.Framework;
 using StructureMap;
@@ -19,14 +21,14 @@ namespace FubuMVC.StructureMap.Testing.Internals
     {
         public class FakeJsonBehavior : IActionBehavior
         {
-            public FakeJsonBehavior(IJsonWriter writer, IFubuRequest request, IRequestData data) 
+            public FakeJsonBehavior(IFormatter writer, IFubuRequest request, IRequestData data) 
             {
                 Writer = writer;
                 Request = request;
                 Data = data;
             }
 
-            public IJsonWriter Writer { get; set; }
+            public IFormatter Writer { get; set; }
             public IFubuRequest Request { get; set; }
             public IRequestData Data { get; set; }
             public void Invoke()
@@ -48,23 +50,22 @@ namespace FubuMVC.StructureMap.Testing.Internals
 
             var def = new ObjectDef(typeof (FakeJsonBehavior));
             def.DependencyByValue(typeof (IFubuRequest), request);
-            var jsonWriter = def.DependencyByType(typeof (IJsonWriter), typeof (AjaxAwareJsonWriter));
-            jsonWriter.DependencyByType(typeof (IOutputWriter), typeof (OutputWriter));
-            jsonWriter.DependencyByType(typeof(IRequestData), typeof(InMemoryRequestData));
+            def.DependencyByType(typeof (IFormatter), typeof (AjaxAwareJsonSerializer));
+
             def.DependencyByType(typeof (IRequestData), typeof (InMemoryRequestData));
 
             var container =
                 new Container(x =>
                 {
                     x.For<IFileSystem>().Use<FileSystem>();
-                    x.For<IHttpWriter>().Use<NulloHttpWriter>();
-                    x.For<IActionBehavior>().Use(new ObjectDefInstance(def));
+                    x.For<IHttpResponse>().Use<OwinHttpResponse>();
+                    x.For<IActionBehavior>().UseInstance(new ObjectDefInstance(def));
                     x.For<ILogger>().Use<Logger>();
-                    x.For<ISystemTime>().Use(SystemTime.Default);
+                    x.For<ISystemTime>().Use(SystemTime.Default());
                 });
 
             var jsonBehavior = container.GetInstance<IActionBehavior>().ShouldBeOfType<FakeJsonBehavior>();
-            jsonBehavior.Writer.ShouldBeOfType<AjaxAwareJsonWriter>();
+            jsonBehavior.Writer.ShouldBeOfType<AjaxAwareJsonSerializer>();
             jsonBehavior.Request.ShouldBeTheSameAs(request);
         }
 
@@ -78,7 +79,7 @@ namespace FubuMVC.StructureMap.Testing.Internals
             };
 
             var container =
-                new Container(x => { x.For<IActionBehavior>().Use(new ObjectDefInstance(def)); });
+                new Container(x => x.For<IActionBehavior>().UseInstance(new ObjectDefInstance(def)));
 
             container.GetInstance<IActionBehavior>().ShouldBeOfType<TestBehavior>();
         }

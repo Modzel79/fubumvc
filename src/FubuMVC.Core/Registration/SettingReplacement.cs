@@ -2,8 +2,7 @@ using FubuCore.Descriptions;
 
 namespace FubuMVC.Core.Registration
 {
-    [ConfigurationType(ConfigurationType.Settings)]
-    public class SettingReplacement<T> : IConfigurationAction, DescribesItself
+    public class SettingReplacement<T> : ISettingsAlteration, DescribesItself where T : class
     {
         private readonly T _settings;
 
@@ -12,9 +11,9 @@ namespace FubuMVC.Core.Registration
             _settings = settings;
         }
 
-        public void Configure(BehaviorGraph graph)
+        public void Alter(SettingsCollection settings)
         {
-            graph.Settings.Replace(_settings);
+            settings.Replace(_settings);
         }
 
         public void Describe(Description description)

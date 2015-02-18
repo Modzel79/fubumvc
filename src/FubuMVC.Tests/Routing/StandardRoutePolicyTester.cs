@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Web.Routing;
+using FubuCore;
 using FubuCore.Binding;
 using FubuMVC.Core;
 using FubuMVC.Core.Behaviors;
@@ -26,7 +28,7 @@ namespace FubuMVC.Tests.Routing
         private IEnumerable<Route> _routes;
         private IServiceFactory theFactory;
 
-        [SetUp]
+        [TestFixtureSetUp]
         public void SetUp()
         {
             theFactory = MockRepository.GenerateMock<IServiceFactory>();
@@ -97,7 +99,8 @@ namespace FubuMVC.Tests.Routing
         [Test]
         public void it_builds_routes_for_all_actions()
         {
-            _routes.ShouldHaveCount(_actionIds.Count() + 1);
+            (_routes.Count() >= _actionIds.Count())
+                .ShouldBeTrue();
         }
 
         [Test]
@@ -109,17 +112,32 @@ namespace FubuMVC.Tests.Routing
         [Test]
         public void builds_additional_routes_for_each_behavior_chain()
         {
+
+
             _routes.Any(x => x.Url.Equals("prefixed/a/m1", StringComparison.OrdinalIgnoreCase)).ShouldBeTrue();
+        }
+
+        [Test]
+        public void orders_additional_routes_by_rank_as_well()
+        {
+            _routes.Last().Url.ShouldEqual("{Client}/");
         }
 
         private BehaviorGraph setupActions()
         {          
             var registry = new FubuRegistry();
-            registry.Route("a/m1").Calls<Action1>(a => a.M1());
-            registry.Route("a/m2").Calls<Action1>(a => a.M2());
-            registry.Route("b/m1").Calls<Action2>(b => b.M1());
-            registry.Route("b/m2").Calls<Action2>(b => b.M2());
-            registry.Route("c/m1async").Calls<Action3>(b => b.M1Async());
+            registry.Actions.IncludeType<Action1>();
+            registry.Actions.IncludeType<Action2>();
+            registry.Actions.IncludeType<Action3>();
+
+            registry.Configure(x => {
+                var routeDefinition = new RouteDefinition("{Client}/");
+                routeDefinition.Input = MockRepository.GenerateMock<IRouteInput>();
+                routeDefinition.Input.Stub(_ => _.Rank).Return(5);
+
+                x.BehaviorFor<Action1>(_ => _.M1()).As<RoutedChain>().AddRouteAlias(routeDefinition);
+            });
+
             return BehaviorGraph.BuildFrom(registry);
         }
 
@@ -131,6 +149,11 @@ namespace FubuMVC.Tests.Routing
             public IActionBehavior BuildBehavior(ServiceArguments arguments, Guid behaviorId)
             {
                 return _behaviorIds.Contains(behaviorId) ? new ActionBehavior(behaviorId) : null;
+            }
+
+            public T Build<T>(ServiceArguments arguments)
+            {
+                throw new NotImplementedException();
             }
 
             public T Get<T>()
@@ -155,6 +178,16 @@ namespace FubuMVC.Tests.Routing
             public void Invoke() {}
             public void InvokePartial() {}
         }
+
+        /*
+            registry.Route("a/m1").Calls<Action1>(a => a.M1());
+            registry.Route("a/m2").Calls<Action1>(a => a.M2());
+            registry.Route("b/m1").Calls<Action2>(b => b.M1());
+            registry.Route("b/m2").Calls<Action2>(b => b.M2());
+            registry.Route("c/m1async").Calls<Action3>(b => b.M1Async());
+         */
+
+
         public class Action1
         {
             [UrlAlias("prefixed/a/m1")]
@@ -165,7 +198,13 @@ namespace FubuMVC.Tests.Routing
         {
             public void M1() { }
             public void M2() { }
+
+            [UrlPattern("")]
+            public void Home(){}
         }
+
+
+
         public class Action3
         {
             public Task<object> M1Async()

@@ -60,5 +60,13 @@ deployment
 fubu.cmd
 Gemfile.lock
 logs
-src/FubuMVC.Core/Caching/Copy of ResourceHash.cs
-src/FubuMVC.Core/Registration/Routes/RouteParameter - Kopia.cs
+storyteller.cmd
+gems
+pkg
+lib
+run_st.cmd
+.bundle
+src/fubu.Docs/snippets
+nupkgs
+src/FubuApp/_templates
+renamer.cs

@@ -9,32 +9,28 @@
   <BottleName>FubuMVC.Docs</BottleName>
   <Nugets>
     <PublishedNuget>
-      <Name>FubuMVC.Autofac</Name>
-      <Description>Autofac bootstrapping for FubuMVC applications</Description>
-    </PublishedNuget>
-    <PublishedNuget>
       <Name>FubuMVC.Core</Name>
       <Description>FubuMVC.Core Library</Description>
+    </PublishedNuget>
+    <PublishedNuget>
+      <Name>FubuMVC.Diagnostics</Name>
+      <Description>A complete look into what's going on inside your FubuMVC application. Once active, diagnostics will be found under /_fubu</Description>
     </PublishedNuget>
     <PublishedNuget>
       <Name>FubuMVC.Katana</Name>
       <Description>Run FubuMVC applications using Katana and OWIN</Description>
     </PublishedNuget>
     <PublishedNuget>
-      <Name>FubuMVC.OwinHost</Name>
-      <Description>OWIN hosting support for FubuMVC applications</Description>
+      <Name>FubuMVC.Razor</Name>
+      <Description>Support for using the Razor view engine within a FubuMVC application.</Description>
+    </PublishedNuget>
+    <PublishedNuget>
+      <Name>FubuMVC.Spark</Name>
+      <Description>Support for using the Spark view engine within a FubuMVC application.</Description>
     </PublishedNuget>
     <PublishedNuget>
       <Name>FubuMVC.StructureMap</Name>
       <Description>StructureMap bootstrapping for FubuMVC applications</Description>
-    </PublishedNuget>
-    <PublishedNuget>
-      <Name>FubuMVC.TestingHarness</Name>
-      <Description>Small library of classes to easily write integration tests against FubuMVC applications hosted by Kayak</Description>
-    </PublishedNuget>
-    <PublishedNuget>
-      <Name>FubuMVC.Windsor</Name>
-      <Description>Castle Windsor bootstrapping for FubuMVC applications</Description>
     </PublishedNuget>
   </Nugets>
   <Url>fubumvc</Url>

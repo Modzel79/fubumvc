@@ -8,17 +8,11 @@ using System.Linq;
 
 namespace FubuMVC.Core.Security
 {
-    public interface IAuthorizationRegistration
-    {
-        ObjectDef ToEndpointAuthorizorObjectDef();
-        void Register(Guid uniqueId, Action<Type, ObjectDef> callback);
-    }
-
-    // TODO -- add ability to specify the authorization failure handling
     [Description("Authorization checks for this endpoint")]
-    public class AuthorizationNode : BehaviorNode, IAuthorizationRegistration
+    public class AuthorizationNode : BehaviorNode, IAuthorizationNode
     {
-        private readonly IList<ObjectDef> _policies = new List<ObjectDef>();
+        private readonly IList<IAuthorizationPolicy> _policies = new List<IAuthorizationPolicy>();
+        private ObjectDef _failure;
 
         public override BehaviorCategory Category
         {
@@ -27,10 +21,52 @@ namespace FubuMVC.Core.Security
 
         protected override ObjectDef buildObjectDef()
         {
-            return ObjectDef.ForType<AuthorizationBehavior>(x =>
+            var def = ObjectDef.ForType<AuthorizationBehavior>();
+            def.DependencyByValue<IAuthorizationNode>(this);
+
+            if (_failure != null)
             {
-                x.EnumerableDependenciesOf<IAuthorizationPolicy>().AddRange(_policies);
-            });
+                def.Dependency(typeof(IAuthorizationFailureHandler), _failure);
+            }
+
+            return def;
+        }
+
+        public void FailureHandler<T>() where T : IAuthorizationFailureHandler
+        {
+            _failure = ObjectDef.ForType<T>();
+        }
+
+        public void FailureHandler(IAuthorizationFailureHandler handler)
+        {
+            _failure = ObjectDef.ForValue(handler);
+        }
+
+        public ObjectDef FailureHandler()
+        {
+            return _failure;
+        }
+
+        public void FailureHandler(Type handlerType)
+        {
+            _failure = new ObjectDef(handlerType);
+        }
+
+        public AuthorizationRight IsAuthorized(IFubuRequestContext context)
+        {
+            if (!_policies.Any()) return AuthorizationRight.Allow;
+
+            return AuthorizationRight.Combine(_policies.Select(x => x.RightsFor(context)));
+        }
+
+        public IEnumerable<IAuthorizationPolicy> Policies
+        {
+            get { return _policies; }
+        }
+
+        public void AddPolicies(IEnumerable<IAuthorizationPolicy> authorizationPolicies)
+        {
+            _policies.AddRange(authorizationPolicies);
         }
 
         /// <summary>
@@ -45,67 +81,9 @@ namespace FubuMVC.Core.Security
 
             var allow = new AllowRole(roleName);
 
-            _policies.Add(ObjectDef.ForValue(allow));
+            _policies.Add(allow);
 
             return allow;
-        }
-
-        /// <summary>
-        /// Adds an authorization rule of type IAuthorizationRule<TModel>
-        /// </summary>
-        /// <typeparam name="TModel"></typeparam>
-        /// <typeparam name="TRule"></typeparam>
-        /// <returns></returns>
-        public ObjectDef AddPolicy<TModel, TRule>() where TRule : IAuthorizationRule<TModel> where TModel : class
-        {
-            return AddRule(typeof(TRule));
-        }
-
-        /// <summary>
-        /// Adds the specified <see cref="IAuthorizationRule{T}"/>
-        /// </summary>
-        /// <param name="ruleType">Closed generic rule type</param>
-        /// <returns></returns>
-        public ObjectDef AddRule(Type ruleType)
-        {
-            var openRuleType = ruleType
-                .FindInterfaceThatCloses(typeof(IAuthorizationRule<>));
-
-
-            if (openRuleType == null)
-            {
-                throw new ArgumentOutOfRangeException("ruleType", "ruleType must close IAuthorizationRule<T>");
-            }
-
-            var modelType = openRuleType
-                .GetGenericArguments()
-                .First();
-
-            var topDef = new ObjectDef(typeof(AuthorizationPolicy<>).MakeGenericType(modelType));
-            _policies.Add(topDef);
-
-            var ruleObjectDef = new ObjectDef(ruleType);
-            topDef.Dependency(typeof(IAuthorizationRule<>).MakeGenericType(modelType), ruleObjectDef);
-
-            return ruleObjectDef;
-        }
-
-        /// <summary>
-        /// Adds an authorization policy of the given policyType to this behavior chain
-        /// </summary>
-        /// <param name="policyType"></param>
-        /// <returns></returns>
-        public ObjectDef AddPolicy(Type policyType)
-        {
-            if (!policyType.CanBeCastTo<IAuthorizationPolicy>())
-            {
-                throw new ArgumentOutOfRangeException("policyType", "policyType must be assignable to IAuthorizationPolicy to be used here");
-            }
-
-            var objectDef = new ObjectDef(policyType);
-            _policies.Add(objectDef);
-
-            return objectDef;
         }
 
         /// <summary>
@@ -114,9 +92,34 @@ namespace FubuMVC.Core.Security
         /// <param name="policy"></param>
         public void AddPolicy(IAuthorizationPolicy policy)
         {
-            // TODO -- defensive programming check
-            _policies.Add(ObjectDef.ForValue(policy));
+            _policies.Add(policy);
         }
+
+        /// <summary>
+        /// Add either an IAuthorizationPolicy or IAuthorizationCheck to 
+        /// this chain by concrete type
+        /// </summary>
+        /// <param name="type"></param>
+        public void Add(Type type)
+    {
+        if (type.CanBeCastTo<IAuthorizationPolicy>() && type.IsConcreteWithDefaultCtor())
+        {
+            var policy = Activator.CreateInstance(type).As<IAuthorizationPolicy>();
+            AddPolicy(policy);
+        }
+        else if (type.CanBeCastTo<IAuthorizationCheck>())
+        {
+            var policyType = typeof (AuthorizationCheckPolicy<>).MakeGenericType(type);
+            Add(policyType);
+        }
+        else
+        {
+            throw new ArgumentOutOfRangeException("Type {0} is not a concrete type of {1} with a default ctor or a type of {2}".ToFormat(type.FullName, typeof(IAuthorizationPolicy).FullName, typeof(IAuthorizationCheck)));
+            
+        }
+
+            
+    }
 
         /// <summary>
         /// List of all roles that have privileges to this BehaviorChain endpoint
@@ -124,7 +127,7 @@ namespace FubuMVC.Core.Security
         /// <returns></returns>
         public IEnumerable<string> AllowedRoles()
         {
-            return _policies.Where(x => x.Value is AllowRole).Select(x => x.Value.As<AllowRole>().Role);
+            return _policies.OfType<AllowRole>().Select(x => x.Role);
         }
 
         /// <summary>
@@ -135,49 +138,6 @@ namespace FubuMVC.Core.Security
         public bool HasRules()
         {
             return _policies.Any();
-        }
-
-        ObjectDef IAuthorizationRegistration.ToEndpointAuthorizorObjectDef()
-        {
-            return toEndpointAuthorizationObjectDef();
-        }
-
-        private ObjectDef toEndpointAuthorizationObjectDef()
-        {
-            var objectDef = new ObjectDef(typeof(EndPointAuthorizor)){
-                Name = ParentChain().UniqueId.ToString()
-            };
-
-            objectDef.EnumerableDependenciesOf<IAuthorizationPolicy>().AddRange(_policies);
-
-            return objectDef;
-        }
-
-        void IAuthorizationRegistration.Register(Guid uniqueId, Action<Type, ObjectDef> callback)
-        {
-            var objectDef = HasRules()
-                ? toEndpointAuthorizationObjectDef()
-                : new ObjectDef(){
-                    Value = NulloEndPointAuthorizor.Flyweight
-                };
-
-            objectDef.Name = uniqueId.ToString();
-
-            callback(typeof (IEndPointAuthorizor), objectDef);
-
-        }
-
-        public IEnumerable<ObjectDef> AllRules
-        {
-            get
-            {
-                return _policies;
-            }
-        }
-
-        public override string ToString()
-        {
-            return base.ToString() + Environment.NewLine + AllRules.Select(x => x.Value != null ?  x.Value.ToString() : x.Type.ToString()).Join(Environment.NewLine);
         }
     }
 }

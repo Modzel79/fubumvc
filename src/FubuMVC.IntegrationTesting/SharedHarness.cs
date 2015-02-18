@@ -1,22 +1,87 @@
 using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Xml;
+using System.Linq.Expressions;
+using System.Threading;
+using Castle.DynamicProxy.Generators.Emitters.SimpleAST;
 using FubuCore;
 using FubuMVC.Core;
 using FubuMVC.Core.Endpoints;
-using FubuMVC.Core.Packaging;
-using FubuMVC.Core.Runtime;
-using FubuMVC.Core.Urls;
+using FubuMVC.Core.Http.Hosting;
+using FubuMVC.Core.Http.Owin;
+using FubuMVC.Core.Http.Scenarios;
+using FubuMVC.Core.Registration;
+using FubuMVC.Core.Registration.Nodes;
 using FubuMVC.Katana;
-using FubuMVC.OwinHost;
 using FubuMVC.StructureMap;
-using FubuTestingSupport;
 using NUnit.Framework;
 using StructureMap;
+using Process = System.Diagnostics.Process;
 
 namespace FubuMVC.IntegrationTesting
 {
+    public static class TestHost
+    {
+        private static readonly Lazy<InMemoryHost> _host =
+            new Lazy<InMemoryHost>(() => { return FubuApplication.DefaultPolicies().StructureMap().RunInMemory(); });
+
+        public static ManualResetEvent Finish = new ManualResetEvent(false);
+
+        public static void Scenario(Action<Scenario> configuration)
+        {
+            _host.Value.Scenario(configuration);
+        }
+
+        public static OwinHttpResponse GetByInput(object input)
+        {
+            OwinHttpResponse response = null;
+
+            Scenario(x => {
+                x.Get.Input(input);
+
+                response = x.Response;
+            });
+
+            return response;
+        }
+
+        public static OwinHttpResponse GetByAction<T>(Expression<Action<T>> expression)
+        {
+            OwinHttpResponse response = null;
+
+            Scenario(x =>
+            {
+                x.Get.Action(expression);
+
+                response = x.Response;
+            });
+
+            return response;
+        }
+
+        public static BehaviorGraph BehaviorGraph
+        {
+            get
+            {
+                return _host.Value.Behaviors;
+            }
+        }
+
+        public static void Scenario<T>(Action<Scenario> configuration) where T : FubuRegistry, new()
+        {
+            using (var host = FubuApplication.For<T>().StructureMap().RunInMemory())
+            {
+                host.Scenario(configuration);
+            }
+        }
+
+        public static void Shutdown()
+        {
+            if (_host.IsValueCreated)
+            {
+                _host.Value.SafeDispose();
+            }
+        }
+    }
+
     [SetUpFixture]
     public class HarnessBootstrapper
     {
@@ -24,12 +89,14 @@ namespace FubuMVC.IntegrationTesting
         public void TearDown()
         {
             SelfHostHarness.Shutdown();
+            TestHost.Shutdown();
         }
     }
 
     public static class SelfHostHarness
     {
         private static EmbeddedFubuMvcServer _server;
+        private static InMemoryHost _host;
 
         public static void Start()
         {
@@ -39,6 +106,26 @@ namespace FubuMVC.IntegrationTesting
         public static string GetRootDirectory()
         {
             return AppDomain.CurrentDomain.BaseDirectory.ParentDirectory().ParentDirectory();
+        }
+
+        public static EmbeddedFubuMvcServer Server
+        {
+            get
+            {
+                if (_server == null) Recycle();
+                
+                return _server;
+            }
+        }
+
+        public static InMemoryHost Host
+        {
+            get
+            {
+                if (_server == null) Recycle();
+                
+                return _host;
+            }
         }
 
         public static string Root
@@ -77,6 +164,7 @@ namespace FubuMVC.IntegrationTesting
             var runtime = bootstrapRuntime();
 
             _server = new EmbeddedFubuMvcServer(runtime, GetRootDirectory(), port);
+            _host = new InMemoryHost(runtime);
         }
 
         private static FubuRuntime bootstrapRuntime()
@@ -87,91 +175,15 @@ namespace FubuMVC.IntegrationTesting
 
     public class HarnessRegistry : FubuRegistry
     {
-
     }
 
-    public static class HttpResponseExtensions
+    public class QuitEndpoint
     {
-        public static HttpResponse ShouldHaveHeader(this HttpResponse response, HttpResponseHeader header)
+        public string get_quit()
         {
-            response.ResponseHeaderFor(header).ShouldNotBeEmpty();
-            return response;
-        }
+            TestHost.Finish.Set();
 
-        public static HttpResponse ContentShouldBe(this HttpResponse response, MimeType mimeType, string content)
-        {
-            response.ContentType.ShouldEqual(mimeType.Value);
-            response.ReadAsText().ShouldEqual(content);
-
-            return response;
-        }
-
-        public static HttpResponse ContentTypeShouldBe(this HttpResponse response, MimeType mimeType)
-        {
-            response.ContentType.ShouldEqual(mimeType.Value);
-
-            return response;
-        }
-
-        public static HttpResponse LengthShouldBe(this HttpResponse response, int length)
-        {
-            response.ContentLength().ShouldEqual(length);
-
-            return response;
-        }
-
-        public static HttpResponse ContentShouldBe(this HttpResponse response, string mimeType, string content)
-        {
-            response.ContentType.ShouldEqual(mimeType);
-            response.ReadAsText().ShouldEqual(content);
-
-            return response;
-        }
-
-
-        public static HttpResponse StatusCodeShouldBe(this HttpResponse response, HttpStatusCode code)
-        {
-            response.StatusCode.ShouldEqual(code);
-
-            return response;
-        }
-
-        public static HttpResponse EtagShouldBe(this HttpResponse response, string etag)
-        {
-            etag.Trim('"').ShouldEqual(etag);
-            return response;
-        }
-
-        public static DateTime? LastModified(this HttpResponse response)
-        {
-            var lastModifiedString = response.ResponseHeaderFor(HttpResponseHeader.LastModified);
-            return lastModifiedString.IsEmpty() ? (DateTime?) null : DateTime.ParseExact(lastModifiedString, "r", null);
-        }
-
-        public static HttpResponse LastModifiedShouldBe(this HttpResponse response, DateTime expected)
-        {
-            var lastModified = response.LastModified();
-            lastModified.HasValue.ShouldBeTrueBecause("No value for LastModified");
-            lastModified.ShouldEqual(expected);
-
-            return response;
-        }
-
-        public static string FileEscape(this string file)
-        {
-            return "\"{0}\"".ToFormat(file);
-        }
-
-        public static IEnumerable<string> ScriptNames(this HttpResponse response)
-        {
-            var document = response.ReadAsXml();
-            var tags = document.DocumentElement.SelectNodes("//script");
-
-            foreach (XmlElement tag in tags)
-            {
-                var name = tag.GetAttribute("src");
-                yield return name.Substring(name.IndexOf('_'));
-            }
+            return "Quitting";
         }
     }
 }

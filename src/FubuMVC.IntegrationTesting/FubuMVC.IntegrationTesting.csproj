@@ -36,20 +36,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Accessibility" />
-    <Reference Include="Autofac">
-      <HintPath>..\packages\Autofac\lib\NET40\Autofac.dll</HintPath>
-    </Reference>
-    <Reference Include="Autofac.Configuration">
-      <HintPath>..\packages\Autofac\lib\NET40\Autofac.Configuration.dll</HintPath>
-    </Reference>
     <Reference Include="Bottles">
       <HintPath>..\packages\Bottles\lib\Bottles.dll</HintPath>
     </Reference>
     <Reference Include="Castle.Core">
       <HintPath>..\packages\Castle.Core\lib\net45\Castle.Core.dll</HintPath>
-    </Reference>
-    <Reference Include="Castle.Windsor">
-      <HintPath>..\packages\Castle.Windsor\lib\net45\Castle.Windsor.dll</HintPath>
     </Reference>
     <Reference Include="FubuCore">
       <HintPath>..\packages\FubuCore\lib\FubuCore.dll</HintPath>
@@ -92,10 +83,13 @@
       <HintPath>..\packages\RhinoMocks\lib\net\Rhino.Mocks.dll</HintPath>
     </Reference>
     <Reference Include="StructureMap">
-      <HintPath>..\packages\structuremap\lib\StructureMap.dll</HintPath>
+      <HintPath>..\packages\structuremap\lib\net40\StructureMap.dll</HintPath>
     </Reference>
     <Reference Include="StructureMap.AutoMocking">
-      <HintPath>..\packages\structuremap.automocking\lib\StructureMap.AutoMocking.dll</HintPath>
+      <HintPath>..\packages\structuremap.automocking\lib\net40\StructureMap.AutoMocking.dll</HintPath>
+    </Reference>
+    <Reference Include="StructureMap.Net4">
+      <HintPath>..\packages\structuremap\lib\net40\StructureMap.Net4.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
@@ -108,29 +102,66 @@
   <ItemGroup>
     <Compile Include="AboutEndpointIntegrationTester.cs" />
     <Compile Include="Ajax\AjaxContinuationProcessingTester.cs" />
+    <Compile Include="Assets\AssetIntegrationContext.cs" />
+    <Compile Include="Assets\asset_writing_headers_are_configurable.cs" />
+    <Compile Include="Assets\asset_writing_in_development.cs" />
+    <Compile Include="Assets\asset_writing_in_production.cs" />
+    <Compile Include="Assets\can_write_font_related_assets_Issue_764.cs" />
+    <Compile Include="Assets\determine_the_public_asset_folder.cs" />
+    <Compile Include="Assets\FindingAndResolving\Adding_CDN_Assets.cs" />
+    <Compile Include="Assets\FindingAndResolving\aliasing_assets.cs" />
+    <Compile Include="Assets\FindingAndResolving\Asset_graph_building_and_resolving_with_defaults.cs" />
+    <Compile Include="Assets\JavascriptRouting.cs" />
+    <Compile Include="Assets\Tag_building_in_development_mode.cs" />
+    <Compile Include="Assets\Tag_building_in_production_mode.cs" />
+    <Compile Include="Assets\Tag_building_with_required_scripts.cs" />
     <Compile Include="Async\AsyncRouteIntegrationTester.cs" />
     <Compile Include="Authorization\end_to_end_authorization_tester.cs" />
-    <Compile Include="Autofac.cs" />
     <Compile Include="Auto_Katana_Hosting_Integration_Tester.cs" />
     <Compile Include="Caching\caching_tester.cs" />
     <Compile Include="can_register_and_use_OWIN_middleware_from_a_bottle.cs" />
     <Compile Include="Chrome\ChromeBehaviorIntegrationTester.cs" />
+    <Compile Include="CommandRunner.cs" />
     <Compile Include="Conneg\AjaxInputModelBindingIntegrationTester.cs" />
     <Compile Include="Conneg\Conneg_can_be_corrected_with_querystring_parameters_for_JSON_and_XML.cs" />
     <Compile Include="Conneg\Conneg_Can_Choose_Output_Media_Based_on_Mimetypes.cs" />
     <Compile Include="Conneg\Custom_mimetype_correction_policy_usage.cs" />
+    <Compile Include="Conneg\Formatters_also_model_bind_against_header_and_route_data.cs" />
     <Compile Include="Conneg\OutputFromAnActionThatReturnsStrings.cs" />
     <Compile Include="Conneg\Output_from_actions_that_return_ajax_continuations.cs" />
     <Compile Include="Conneg\Output_from_Actions_that_return_HtmlTags.cs" />
     <Compile Include="Conneg\Resource_cannot_be_found_handling.cs" />
+    <Compile Include="Conneg\Using_custom_media_readers_and_writers.cs" />
     <Compile Include="Continuations\can_use_continuations_on_a_partial.cs" />
     <Compile Include="Continuations\redirects_with_the_get.cs" />
     <Compile Include="debugger.cs" />
     <Compile Include="EndpointServiceIntegratedSmokeTester.cs" />
+    <Compile Include="FubuModeTester.cs" />
+    <Compile Include="FubuRegistryRunner.cs" />
     <Compile Include="Http\partial_invocations.cs" />
     <Compile Include="Http\reading_and_writing_http_headers_and_responses_with_OWIN.cs" />
-    <Compile Include="Issues\Issue313.cs" />
     <Compile Include="Http\compression_testing.cs" />
+    <Compile Include="map_files_are_whitelisted.cs" />
+    <Compile Include="Owin\binding_against_form_data.cs" />
+    <Compile Include="Owin\binding_against_querystring_values.cs" />
+    <Compile Include="Owin\binding_against_request_cookies.cs" />
+    <Compile Include="Owin\handling_501_responses.cs" />
+    <Compile Include="Owin\handling_async_routes.cs" />
+    <Compile Include="Owin\handling_a_404.cs" />
+    <Compile Include="Owin\Harness.cs" />
+    <Compile Include="Owin\Middleware\HtmlHeadInjectionMiddlewareTester.cs" />
+    <Compile Include="Owin\Owin_url_resolution_tester.cs" />
+    <Compile Include="Owin\passing_the_FubuMode_into_the_OWIN_host.cs" />
+    <Compile Include="Owin\reading_and_writing_json_and_xml_thru_conneg.cs" />
+    <Compile Include="Owin\reading_querystring_values.cs" />
+    <Compile Include="Owin\reading_request_headers.cs" />
+    <Compile Include="Owin\reading_route_data.cs" />
+    <Compile Include="Owin\specifying_environment_key_values_for_owin.cs" />
+    <Compile Include="Owin\using_custom_middleware.cs" />
+    <Compile Include="Owin\writing_a_file_to_output.cs" />
+    <Compile Include="Owin\writing_a_non_default_status_code.cs" />
+    <Compile Include="Owin\writing_response_headers.cs" />
+    <Compile Include="Owin\writing_string_output.cs" />
     <Compile Include="Packaging\assembly_marked_as_FubuModule_is_added_as_a_package.cs" />
     <Compile Include="Packaging\invoking_endpoints_from_a_package.cs" />
     <Compile Include="Packaging\linking_and_unlinking_packages.cs" />
@@ -138,7 +169,20 @@
     <Compile Include="Packaging\link_assembly_bottle_marked_as_FubuModule_does_not_blow_chunks.cs" />
     <Compile Include="Packaging\reading_files_and_contents.cs" />
     <Compile Include="Packaging\unlinking_a_bottle_from_the_command_line.cs" />
+    <Compile Include="Partials\invoke_as_html_in_endpoint.cs" />
+    <Compile Include="performance_timing_smoke_tester.cs" />
+    <Compile Include="Projections\adaptive_property_type_projection_Tester.cs" />
+    <Compile Include="Projections\end_to_end_json_serialization.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Querying\ActionToken.cs" />
+    <Compile Include="Querying\AssemblyToken.cs" />
+    <Compile Include="Querying\EndpointModel.cs" />
+    <Compile Include="Querying\EndpointToken.cs" />
+    <Compile Include="Querying\GraphQuery.cs" />
+    <Compile Include="Querying\RemoteBehaviorGraph.cs" />
+    <Compile Include="Querying\TypeToken.cs" />
+    <Compile Include="read_cookies_from_the_request.cs" />
+    <Compile Include="Security\AuthorizationPreviewServiceIntegratedTester.cs" />
     <Compile Include="StaticFiles\reading_static_file_content_with_katana.cs" />
     <Compile Include="Routing\end_to_end_route_alias_tester.cs" />
     <Compile Include="Samples\ConnegSamples.cs" />
@@ -148,40 +192,80 @@
     <Compile Include="SharedHarness.cs" />
     <Compile Include="SharedHarnessContext.cs" />
     <Compile Include="SelfHostHttpServerTester.cs" />
-    <Compile Include="Windsor.cs" />
+    <Compile Include="UI\can_override_the_field_chrome_bug.cs" />
+    <Compile Include="UI\doughnut_caching_tester.cs" />
+    <Compile Include="UI\ElementConventionsFubuPageExtensions_FullStackTester_DefaultConventions.cs" />
+    <Compile Include="UI\ElementConventions_for_Partials_in_Loop_Tester.cs" />
+    <Compile Include="UI\ElementConventions_with_Profiles_Tester.cs" />
+    <Compile Include="UI\Explicit_accessor_overrides_integration_tester.cs" />
+    <Compile Include="UI\FormRequestConventionsIntegrationTester.cs" />
+    <Compile Include="UI\FubuPageExtensions_FullStack_Tester.cs" />
+    <Compile Include="UI\indexer_owner_type_bug_tester.cs" />
+    <Compile Include="UI\ShowEditExpressions_integration_Tester.cs" />
+    <Compile Include="UI\Templates\TemplateGenerationIntegration_Tests.cs" />
+    <Compile Include="Using_a_custom_routing_policy.cs" />
+    <Compile Include="Views\Actionless_Views.cs" />
+    <Compile Include="Auto_Import_Model_Namespaces.cs" />
+    <Compile Include="Views\LayoutAttachment\Explicit_declaration_of_master_layout.cs" />
+    <Compile Include="Views\LayoutAttachment\Explicit_declaration_of_master_layout_spark.cs" />
+    <Compile Include="Views\LayoutAttachment\override_the_default_layout_name.cs" />
+    <Compile Include="Views\LayoutAttachment\override_the_shared_folder_name.cs" />
+    <Compile Include="Views\LayoutAttachment\partials_do_not_get_layouts.cs" />
+    <Compile Include="Views\LayoutAttachment\Simple_attachment_of_application_layout.cs" />
+    <Compile Include="Views\LayoutAttachment\Use_layout_from_bottle_when_not_in_application.cs" />
+    <Compile Include="Views\LayoutAttachment\Use_named_layout_in_closest_shared_folder.cs" />
+    <Compile Include="Views\Razor\can_use_the_auto_imported_namespaces.cs" />
+    <Compile Include="Views\Razor\Context_is_usable.cs" />
+    <Compile Include="Views\Razor\Do_not_use_layout_if_view_is_being_rendered_as_partial.cs" />
+    <Compile Include="Views\Razor\Handles_null_properties.cs" />
+    <Compile Include="Views\Razor\Layouts_with_Sections.cs" />
+    <Compile Include="Views\Razor\Multiple_layouts.cs" />
+    <Compile Include="Views\Razor\No_layout_with_use_none.cs" />
+    <Compile Include="Views\Razor\Page_extensions.cs" />
+    <Compile Include="Views\Razor\RazorRendering_without_layouts_Tester.cs" />
+    <Compile Include="Views\Razor\Razor_view_activation_tester.cs" />
+    <Compile Include="Views\Razor\Using_Helpers.cs" />
+    <Compile Include="Views\Spark\Activation.cs" />
+    <Compile Include="Views\Spark\can_use_namespaces_from_common_view_namespaces.cs" />
+    <Compile Include="Views\Spark\Simple_rendering_with_precompilation.cs" />
+    <Compile Include="Views\Spark\No_layout_with_use_none.cs" />
+    <Compile Include="Views\Spark\Partials.cs" />
+    <Compile Include="Views\Spark\Partials_do_not_get_layout.cs" />
+    <Compile Include="Views\Spark\Render_views_from_bottles.cs" />
+    <Compile Include="Views\Spark\Simple_rendering.cs" />
+    <Compile Include="Views\Spark\Three_Pass_Rendering_And_Bindings.cs" />
+    <Compile Include="Views\TemplateFileIntegrationTester.cs" />
+    <Compile Include="Views\ViewFacility_FindInShared.cs" />
+    <Compile Include="Views\ViewIntegrationContext.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\FubuMVC.Autofac\FubuMVC.Autofac.csproj">
-      <Project>{3662e1ae-d402-43b5-8f81-0d9a04b6f434}</Project>
-      <Name>FubuMVC.Autofac</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FubuMVC.Core\FubuMVC.Core.csproj">
       <Project>{E18FD922-0E7A-49CD-B89F-473826077B9D}</Project>
       <Name>FubuMVC.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FubuMVC.Diagnostics\FubuMVC.Diagnostics.csproj">
+      <Project>{a1deb080-5a9a-44b4-a10b-84da9bd07af5}</Project>
+      <Name>FubuMVC.Diagnostics</Name>
     </ProjectReference>
     <ProjectReference Include="..\FubuMVC.Katana\FubuMVC.Katana.csproj">
       <Project>{48BC51C2-B759-48DB-AAE1-F4686CD6D02A}</Project>
       <Name>FubuMVC.Katana</Name>
     </ProjectReference>
-    <ProjectReference Include="..\FubuMVC.OwinHost\FubuMVC.OwinHost.csproj">
-      <Project>{EA10DF80-FD95-4172-BC18-DB0DFB279844}</Project>
-      <Name>FubuMVC.OwinHost</Name>
+    <ProjectReference Include="..\FubuMVC.Razor\FubuMVC.Razor.csproj">
+      <Project>{a88246a6-2a7a-4964-902e-a5a7fdaaa9d4}</Project>
+      <Name>FubuMVC.Razor</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\FubuMVC.Spark\FubuMVC.Spark.csproj">
+      <Project>{9d6bf559-6461-4eac-bb16-f976ff43e8da}</Project>
+      <Name>FubuMVC.Spark</Name>
     </ProjectReference>
     <ProjectReference Include="..\FubuMVC.StructureMap\FubuMVC.StructureMap.csproj">
       <Project>{ABFEA520-820C-4B77-9015-6A09E24252FA}</Project>
       <Name>FubuMVC.StructureMap</Name>
     </ProjectReference>
-    <ProjectReference Include="..\FubuMVC.TestingHarness\FubuMVC.TestingHarness.csproj">
-      <Project>{C9C9A405-1164-44AB-9CB4-3639F0979BE9}</Project>
-      <Name>FubuMVC.TestingHarness</Name>
-    </ProjectReference>
     <ProjectReference Include="..\FubuMVC.Tests\FubuMVC.Tests.csproj">
       <Project>{FEB91F9F-ECE2-480C-B39C-A44BBF1F7B01}</Project>
       <Name>FubuMVC.Tests</Name>
-    </ProjectReference>
-    <ProjectReference Include="..\FubuMVC.Windsor\FubuMVC.Windsor.csproj">
-      <Project>{3825ff35-1bf7-42b7-9ab4-43e07de73a06}</Project>
-      <Name>FubuMVC.Windsor</Name>
     </ProjectReference>
     <ProjectReference Include="..\OwinBottle\OwinBottle.csproj">
       <Project>{60b6139b-6bda-4860-a475-9675d47888f7}</Project>
@@ -283,10 +367,23 @@
     <Content Include="content\styles\redmond\jquery.ui.theme.css" />
     <Content Include="content\styles\ui.multiselect.css" />
     <Content Include="Files\1.txt" />
+    <Content Include="public\1.0.1\d.js" />
+    <Content Include="public\1.0.1\e.js" />
+    <Content Include="public\1.0.1\f.js" />
+    <Content Include="public\javascript\a.js" />
+    <Content Include="public\javascript\b.js" />
+    <Content Include="public\javascript\c.js" />
+    <Content Include="ReadMe.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Sample.js" />
+    <Content Include="Test.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <Content Include="Tests\Packaging\Environment\Environment Runner captures errors from the Environment setup.xml" />
     <Content Include="Tests\Packaging\Environment\Execute Environment Happy Path.xml" />
     <Content Include="Tests\Packaging\Environment\Logging installer failures.xml" />
+    <None Include="test.map" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
